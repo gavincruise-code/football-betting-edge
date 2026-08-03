@@ -144,27 +144,51 @@ def build_master_dataset(
 
     all_dfs = []
 
+    from data_utils import GLOBAL_LEAGUE_CODES, download_league_data
+
     for lg in leagues:
-        fd_code = UNDERSTAT_TO_FD_LEAGUE.get(lg, "E0")
-        for s_year in seasons:
+        fd_code = UNDERSTAT_TO_FD_LEAGUE.get(lg, lg)
+
+        if fd_code in GLOBAL_LEAGUE_CODES:
+            # Handle Global league single CSV
             if use_cache:
-                cached_df = load_cached_dataset(lg, s_year)
+                cached_df = load_cached_dataset(lg, 2024)
                 if cached_df is not None and not cached_df.empty:
                     all_dfs.append(cached_df)
                     continue
 
-            # Format season_code for FD (e.g. 2023 -> '2324')
-            s_code = f"{str(s_year)[2:]}{str(s_year+1)[2:]}"
-            fd_df = download_fd_season(fd_code, s_code)
-            xg_df = scrape_understat_season(lg, s_year)
+            try:
+                g_df = download_league_data(fd_code)
+                if not g_df.empty:
+                    g_df['league'] = lg
+                    g_df['xG_home'] = np.nan
+                    g_df['xG_away'] = np.nan
+                    if use_cache:
+                        cache_dataset(g_df, lg, 2024)
+                    all_dfs.append(g_df)
+            except Exception as e:
+                logger.warning(f"Failed to download global league {lg}: {e}")
 
-            merged_df = merge_datasets(fd_df, xg_df, lg)
-            if not merged_df.empty:
-                merged_df['league'] = lg
-                merged_df['season_year'] = s_year
+        else:
+            # Handle European seasonal leagues
+            for s_year in seasons:
                 if use_cache:
-                    cache_dataset(merged_df, lg, s_year)
-                all_dfs.append(merged_df)
+                    cached_df = load_cached_dataset(lg, s_year)
+                    if cached_df is not None and not cached_df.empty:
+                        all_dfs.append(cached_df)
+                        continue
+
+                s_code = f"{str(s_year)[2:]}{str(s_year+1)[2:]}"
+                fd_df = download_fd_season(fd_code, s_code)
+                xg_df = scrape_understat_season(lg, s_year)
+
+                merged_df = merge_datasets(fd_df, xg_df, lg)
+                if not merged_df.empty:
+                    merged_df['league'] = lg
+                    merged_df['season_year'] = s_year
+                    if use_cache:
+                        cache_dataset(merged_df, lg, s_year)
+                    all_dfs.append(merged_df)
 
     if not all_dfs:
         return pd.DataFrame()

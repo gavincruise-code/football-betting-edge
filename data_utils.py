@@ -15,7 +15,23 @@ LEAGUES: Dict[str, Dict[str, str]] = {
     "Portugal": {"Liga Portugal": "P1"},
     "Turkey": {"Super Lig": "T1"},
     "Greece": {"Super League": "G1"},
+    "USA": {"Major League Soccer (MLS)": "USA"},
+    "Argentina": {"Primera Division": "ARG"},
+    "Brazil": {"Serie A": "BRA"},
+    "Mexico": {"Liga MX": "MEX"},
+    "Japan": {"J-League": "JPN"},
+    "China": {"Super League": "CHN"},
+    "Sweden": {"Allsvenskan": "SWE"},
+    "Norway": {"Eliteserien": "NOR"},
+    "Denmark": {"Superligaen": "DNK"},
+    "Finland": {"Veikkausliiga": "FIN"},
+    "Poland": {"Ekstraklasa": "POL"},
+    "Romania": {"Liga 1": "ROU"},
+    "Switzerland": {"Super League": "SWZ"},
+    "Austria": {"Bundesliga": "AUT"},
 }
+
+GLOBAL_LEAGUE_CODES = ["USA", "ARG", "BRA", "MEX", "JPN", "CHN", "SWE", "NOR", "DNK", "FIN", "POL", "ROU", "SWZ", "AUT"]
 
 def get_available_seasons(start_year: int = 2005, end_year: int = 2025) -> List[str]:
     """Returns list of season strings like '2024-25', '2023-24', etc."""
@@ -32,9 +48,13 @@ def season_to_code(season: str) -> str:
         return parts[0][2:] + parts[1]
     return season
 
-def download_league_data(league_code: str, season_code: str) -> pd.DataFrame:
-    """Download CSV from football-data.co.uk. Returns DataFrame or raises."""
-    url = f"https://www.football-data.co.uk/mmz4281/{season_code}/{league_code}.csv"
+def download_league_data(league_code: str, season_code: str = "") -> pd.DataFrame:
+    """Download CSV from football-data.co.uk. Handles both European seasonal and Global extra league CSVs."""
+    if league_code in GLOBAL_LEAGUE_CODES:
+        url = f"https://www.football-data.co.uk/new/{league_code}.csv"
+    else:
+        url = f"https://www.football-data.co.uk/mmz4281/{season_code}/{league_code}.csv"
+    
     try:
         df = pd.read_csv(url)
         return normalize_columns(df)
@@ -47,58 +67,64 @@ def load_csv(file_or_path) -> pd.DataFrame:
     return normalize_columns(df)
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Map variant column names to standard names. Creates these columns:
-    - 'total_goals' = FTHG + FTAG
-    - 'over25' = total_goals > 2.5 (bool)
-    - 'over25_odds': best available from B365>2.5, BbAv>2.5, BbMx>2.5, P>2.5, Max>2.5, Avg>2.5
-    - 'under25_odds': best available
-    - 'draw_odds': B365D or similar
-    - 'home_odds', 'away_odds': match result odds
-    """
+    """Map variant column names (European & Global formats) to standard names."""
     df = df.copy()
+
+    # Column name mappings for Global leagues CSV format
+    rename_dict = {
+        'Home': 'HomeTeam',
+        'Away': 'AwayTeam',
+        'HG': 'FTHG',
+        'AG': 'FTAG',
+        'Res': 'FTR'
+    }
+    df = df.rename(columns=rename_dict)
+
     if 'Date' in df.columns:
-        df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, format='mixed')
+        df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, format='mixed', errors='coerce')
     
     if 'FTHG' in df.columns and 'FTAG' in df.columns:
+        df['FTHG'] = pd.to_numeric(df['FTHG'], errors='coerce')
+        df['FTAG'] = pd.to_numeric(df['FTAG'], errors='coerce')
         df['total_goals'] = df['FTHG'] + df['FTAG']
         df['over25'] = df['total_goals'] > 2.5
     
     # over25_odds
-    o25_cols = ['B365>2.5', 'BbAv>2.5', 'BbMx>2.5', 'P>2.5', 'Max>2.5', 'Avg>2.5']
+    o25_cols = ['B365>2.5', 'BbAv>2.5', 'BbMx>2.5', 'P>2.5', 'Max>2.5', 'Avg>2.5', 'B365C>2.5', 'AvgC>2.5', 'MaxC>2.5', 'PSC>2.5']
     avail_o25 = [c for c in o25_cols if c in df.columns]
     if avail_o25:
-        df['over25_odds'] = df[avail_o25].max(axis=1)
+        df['over25_odds'] = df[avail_o25].apply(pd.to_numeric, errors='coerce').max(axis=1)
     else:
         df['over25_odds'] = np.nan
         
     # under25_odds
-    u25_cols = ['B365<2.5', 'BbAv<2.5', 'BbMx<2.5', 'P<2.5', 'Max<2.5', 'Avg<2.5']
+    u25_cols = ['B365<2.5', 'BbAv<2.5', 'BbMx<2.5', 'P<2.5', 'Max<2.5', 'Avg<2.5', 'B365C<2.5', 'AvgC<2.5', 'MaxC<2.5', 'PSC<2.5']
     avail_u25 = [c for c in u25_cols if c in df.columns]
     if avail_u25:
-        df['under25_odds'] = df[avail_u25].max(axis=1)
+        df['under25_odds'] = df[avail_u25].apply(pd.to_numeric, errors='coerce').max(axis=1)
     else:
         df['under25_odds'] = np.nan
         
     # draw_odds
-    if 'B365D' in df.columns:
-        df['draw_odds'] = df['B365D']
+    draw_cols = ['B365D', 'AvgCD', 'MaxCD', 'B365CD', 'PSCD', 'BFECD']
+    avail_draw = [c for c in draw_cols if c in df.columns]
+    if avail_draw:
+        df['draw_odds'] = df[avail_draw].apply(pd.to_numeric, errors='coerce').max(axis=1)
     else:
         df['draw_odds'] = np.nan
         
     # home_odds, away_odds
-    if 'B365H' in df.columns:
-        df['home_odds'] = df['B365H']
-    else:
-        df['home_odds'] = np.nan
-        
-    if 'B365A' in df.columns:
-        df['away_odds'] = df['B365A']
-    else:
-        df['away_odds'] = np.nan
+    home_cols = ['B365H', 'AvgCH', 'MaxCH', 'B365CH', 'PSCH', 'BFECH']
+    avail_home = [c for c in home_cols if c in df.columns]
+    df['home_odds'] = df[avail_home].apply(pd.to_numeric, errors='coerce').max(axis=1) if avail_home else np.nan
+
+    away_cols = ['B365A', 'AvgCA', 'MaxCA', 'B365CA', 'PSCA', 'BFECA']
+    avail_away = [c for c in away_cols if c in df.columns]
+    df['away_odds'] = df[avail_away].apply(pd.to_numeric, errors='coerce').max(axis=1) if avail_away else np.nan
 
     # Sort by date
     if 'Date' in df.columns:
-        df = df.sort_values('Date').reset_index(drop=True)
+        df = df.dropna(subset=['Date']).sort_values('Date').reset_index(drop=True)
         
     return df
 

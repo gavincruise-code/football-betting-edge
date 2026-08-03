@@ -19,9 +19,23 @@ UNDERSTAT_LEAGUES = {
     "Bundesliga": "Bundesliga",
     "Serie_A": "Serie_A",
     "Ligue_1": "Ligue_1",
+    "USA (MLS)": "USA",
+    "Argentina": "ARG",
+    "Brazil": "BRA",
+    "Mexico": "MEX",
+    "Japan": "JPN",
+    "China": "CHN",
+    "Sweden": "SWE",
+    "Norway": "NOR",
+    "Denmark": "DNK",
+    "Finland": "FIN",
+    "Poland": "POL",
+    "Romania": "ROU",
+    "Switzerland": "SWZ",
+    "Austria": "AUT",
 }
 
-# Mapping from Understat league names to football-data.co.uk league codes
+# Mapping from league keys to football-data.co.uk league codes
 UNDERSTAT_TO_FD_LEAGUE = {
     "EPL": "E0",
     "La_Liga": "SP1",
@@ -29,6 +43,20 @@ UNDERSTAT_TO_FD_LEAGUE = {
     "Bundesliga": "D1",
     "Serie_A": "I1",
     "Ligue_1": "F1",
+    "USA (MLS)": "USA",
+    "Argentina": "ARG",
+    "Brazil": "BRA",
+    "Mexico": "MEX",
+    "Japan": "JPN",
+    "China": "CHN",
+    "Sweden": "SWE",
+    "Norway": "NOR",
+    "Denmark": "DNK",
+    "Finland": "FIN",
+    "Poland": "POL",
+    "Romania": "ROU",
+    "Switzerland": "SWZ",
+    "Austria": "AUT",
 }
 
 # Seasons to use (last 5 seasons as per user decision)
