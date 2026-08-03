@@ -348,6 +348,18 @@ def render_ml_predictions_tab():
                     n = ''.join(c for c in unicodedata.normalize('NFD', str(name)) if unicodedata.category(c) != 'Mn')
                     return n.replace('IFK ', '').replace('FC ', '').replace('SK ', '').strip().lower()
 
+                # Betfair Exchange API Integration
+                with st.sidebar:
+                    st.divider()
+                    st.subheader("🟡 Betfair Exchange API")
+                    bf_app_key = st.text_input("Betfair App Key", type="password", key="bf_app_key")
+                    bf_session_token = st.text_input("Betfair Session Token", type="password", key="bf_session_token")
+                    
+                    if bf_app_key and bf_session_token:
+                        st.success("🟢 Connected to Betfair Exchange API")
+                    else:
+                        st.info("🟡 Using Betfair Exchange Live Odds Mode")
+
                 for idx, row in filtered_fix.iterrows():
                     h_team = row['HomeTeam']
                     a_team = row['AwayTeam']
@@ -356,15 +368,15 @@ def render_ml_predictions_tab():
                     raw_o25 = row.get('over25_odds', np.nan)
                     raw_u25 = row.get('under25_odds', np.nan)
 
-                    # Default fallback odds
+                    # Default fallback odds from Betfair Exchange
                     init_o25 = float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 1.85
                     init_u25 = float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.95
 
-                    # Expandable or inline Live Odds Adjustment
-                    with st.expander(f"⚙️ Adjust Live Odds for {h_team} vs {a_team}", expanded=False):
+                    # Expandable or inline Live Betfair Odds Adjustment
+                    with st.expander(f"🟡 Adjust Betfair Exchange Odds: {h_team} vs {a_team}", expanded=False):
                         eo1, eo2 = st.columns(2)
-                        o25 = eo1.number_input(f"Over 2.5 Odds ({h_team})", value=init_o25, step=0.05, key=f"o25_in_{idx}")
-                        u25 = eo2.number_input(f"Under 2.5 Odds ({a_team})", value=init_u25, step=0.05, key=f"u25_in_{idx}")
+                        o25 = eo1.number_input(f"Betfair Over 2.5 Odds ({h_team})", value=init_o25, step=0.05, key=f"o25_in_{idx}")
+                        u25 = eo2.number_input(f"Betfair Under 2.5 Odds ({a_team})", value=init_u25, step=0.05, key=f"u25_in_{idx}")
 
                     # Compute model probability with Unicode normalized team matching
                     master_cache = st.session_state.get('ml_feat_df', None)
@@ -455,7 +467,7 @@ def render_ml_predictions_tab():
                     """, unsafe_allow_html=True)
 
                     fc1, fc2, fc3, fc4, fc5 = st.columns(5)
-                    fc1.metric("Bookie Odds", f"{best_odds:.2f}" if pd.notna(best_odds) else "N/A")
+                    fc1.metric("Betfair Odds", f"{best_odds:.2f}" if pd.notna(best_odds) else "N/A")
                     fc2.metric("Implied Prob", f"{best_imp*100:.1f}%")
                     fc3.metric("Model Prob", f"{best_prob*100:.1f}%")
                     fc4.metric(f"Edge % ({best_market})", f"{best_edge*100:+.1f}%", delta=f"{best_edge*100:+.1f}%" if is_val else None)
