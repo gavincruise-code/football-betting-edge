@@ -301,8 +301,8 @@ def render_ml_predictions_tab():
             if not fix_df.empty:
                 f_col1, f_col2, f_col3 = st.columns(3)
                 with f_col1:
-                    available_leagues = ["All Leagues"] + sorted(list(fix_df['league'].dropna().unique()))
-                    sel_league = st.selectbox("Filter League", available_leagues)
+                    all_league_keys = ["All Leagues"] + sorted(list(set(list(UNDERSTAT_LEAGUES.keys()) + list(fix_df['league'].dropna().unique()))))
+                    sel_league = st.selectbox("Filter League", all_league_keys)
                 with f_col2:
                     edge_filter = st.slider("Min Edge %", 1, 15, 5, 1) / 100.0
                 with f_col3:
@@ -384,7 +384,9 @@ def render_ml_predictions_tab():
 
                     st.write("")
 
-                if opportunities_found == 0 and val_only:
+                if filtered_fix.empty:
+                    st.info(f"No unplayed upcoming matches currently scheduled today for {sel_league}. Switch to the 'Custom Match Calculator' tab to analyze custom team matchups!")
+                elif opportunities_found == 0 and val_only:
                     st.info("No +EV opportunities meeting the minimum edge threshold found in current filter.")
 
     with sub_tab2:

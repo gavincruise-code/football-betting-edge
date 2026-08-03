@@ -202,34 +202,73 @@ def build_master_dataset(
 
 def fetch_upcoming_fixtures() -> pd.DataFrame:
     """
-    Downloads live upcoming fixtures feed from football-data.co.uk/fixtures.csv.
-    Normalizes columns, dates, times, and odds.
+    Downloads live upcoming fixtures feed from football-data.co.uk/fixtures.csv
+    AND scans global league feeds for unplayed upcoming matches.
+    
+    STRICT FILTERING:
+    - Only includes matches where Date >= Today (00:00:00).
+    - Excludes matches that have already completed (FTHG/FTAG/FTR populated).
     """
+    today = pd.Timestamp.now().normalize()
+    all_upcoming = []
+
+    # Source 1: Standard fixtures.csv
     url = "https://www.football-data.co.uk/fixtures.csv"
     try:
         df = pd.read_csv(url)
-        if df.empty:
-            return pd.DataFrame()
+        if not df.empty:
+            from data_utils import normalize_columns
+            df = normalize_columns(df)
 
-        from data_utils import normalize_columns
-        df = normalize_columns(df)
+            if 'Date' in df.columns:
+                df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
 
-        if 'Date' in df.columns:
-            df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
+            # Filter strictly for today onwards AND unplayed matches
+            unplayed_mask = (df['Date'] >= today)
+            if 'FTHG' in df.columns:
+                unplayed_mask = unplayed_mask & (df['FTHG'].isna())
 
-        # Map Div to league names
-        div_map = {
-            'E0': 'EPL', 'E1': 'Championship', 'E2': 'League 1', 'E3': 'League 2',
-            'SP1': 'La_Liga', 'SP2': 'Segunda Division',
-            'D1': 'Bundesliga', 'D2': 'Bundesliga 2',
-            'I1': 'Serie_A', 'I2': 'Serie B',
-            'F1': 'Ligue_1', 'F2': 'Ligue 2',
-            'N1': 'Eredivisie', 'B1': 'Pro League',
-            'P1': 'Liga Portugal', 'T1': 'Super Lig', 'G1': 'Super League'
-        }
-        df['league'] = df['Div'].map(div_map).fillna(df['Div'])
+            df = df[unplayed_mask].copy()
 
-        return df.sort_values('Date').reset_index(drop=True)
+            div_map = {
+                'E0': 'EPL', 'E1': 'Championship', 'E2': 'League 1', 'E3': 'League 2', 'EC': 'Conference',
+                'SC0': 'Scottish Premiership', 'SC1': 'Scottish Championship', 'SC2': 'Scottish League 1', 'SC3': 'Scottish League 2',
+                'SP1': 'La_Liga', 'SP2': 'Segunda Division',
+                'D1': 'Bundesliga', 'D2': 'Bundesliga 2',
+                'I1': 'Serie_A', 'I2': 'Serie B',
+                'F1': 'Ligue_1', 'F2': 'Ligue 2',
+                'N1': 'Eredivisie', 'B1': 'Pro League',
+                'P1': 'Liga Portugal', 'T1': 'Super Lig', 'G1': 'Super League'
+            }
+            if 'Div' in df.columns:
+                df['league'] = df['Div'].map(div_map).fillna(df['Div'])
+            all_upcoming.append(df)
     except Exception as e:
-        logger.warning(f"Failed to fetch upcoming fixtures from football-data.co.uk: {e}")
+        logger.warning(f"Failed to fetch fixtures.csv: {e}")
+
+    # Source 2: Global Extra Leagues CSVs
+    from data_utils import GLOBAL_LEAGUE_CODES, download_league_data
+    for code in GLOBAL_LEAGUE_CODES:
+        try:
+            gdf = download_league_data(code)
+            if not gdf.empty and 'Date' in gdf.columns:
+                unplayed_g = gdf[(gdf['Date'] >= today) & (gdf['FTHG'].isna() | gdf['FTR'].isna())].copy()
+                if not unplayed_g.empty:
+                    gdf_map = {
+                        'USA': 'USA (MLS)', 'ARG': 'Argentina', 'BRA': 'Brazil', 'MEX': 'Mexico',
+                        'JPN': 'Japan', 'CHN': 'China', 'SWE': 'Sweden', 'NOR': 'Norway',
+                        'DNK': 'Denmark', 'FIN': 'Finland', 'POL': 'Poland', 'ROU': 'Romania',
+                        'SWZ': 'Switzerland', 'AUT': 'Austria'
+                    }
+                    unplayed_g['league'] = gdf_map.get(code, code)
+                    all_upcoming.append(unplayed_g)
+        except Exception as e:
+            logger.warning(f"Failed to fetch global upcoming for {code}: {e}")
+
+    if not all_upcoming:
         return pd.DataFrame()
+
+    res = pd.concat(all_upcoming, ignore_index=True)
+    if 'Date' in res.columns:
+        res = res.sort_values('Date').reset_index(drop=True)
+    return res
