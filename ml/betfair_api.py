@@ -1,8 +1,8 @@
 """
-Betfair Exchange API & Market Price Integration
-================================================
-Provides real-time Betfair Exchange Back & Lay odds fetching for Over 2.5 Goals,
-Under 2.5 Goals, and Match Result markets.
+Betfair Exchange API Integration
+=================================
+Automated SSL Certificate login and live exchange market odds fetching
+using your Betfair Exchange app key and credentials.
 """
 
 import os
@@ -13,26 +13,67 @@ from typing import Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Default Betfair API Endpoints
+BETFAIR_CERT_LOGIN_URL = "https://identitysso-api.betfair.com/api/certlogin"
 BETFAIR_API_URL = "https://api.betfair.com/exchange/betting/rest/v1.0"
-BETFAIR_IDENTITY_URL = "https://identitysso.betfair.com/api/login"
 
-class BetfairExchangeAPI:
+class BetfairExchangeClient:
     """
-    Betfair Exchange API Client for fetching live back and lay odds.
+    Automated Betfair Exchange API client with SSL certificate authentication.
     """
 
-    def __init__(self, app_key: Optional[str] = None, session_token: Optional[str] = None):
-        self.app_key = app_key or os.getenv("BETFAIR_APP_KEY", "")
-        self.session_token = session_token or os.getenv("BETFAIR_SESSION_TOKEN", "")
+    def __init__(self):
+        self.username = os.getenv("BETFAIR_USERNAME", "tidyboy86")
+        self.password = os.getenv("BETFAIR_PASSWORD", "86Mizuno20")
+        self.app_key = os.getenv("BETFAIR_APP_KEY", "cMYlooSYxTZsNflo")
+        self.cert_path = os.getenv("BETFAIR_CERT_PATH", "./certs")
+        self.session_token = None
 
-    def is_authenticated(self) -> bool:
-        return bool(self.app_key and self.session_token)
+        # Resolve cert file paths
+        self.crt_file = os.path.join(self.cert_path, "client-2048.crt")
+        self.key_file = os.path.join(self.cert_path, "client-2048.key")
+
+        # Attempt initial login
+        self.login()
+
+    def login(self) -> bool:
+        """
+        Authenticate with Betfair via SSL certificate.
+        """
+        if not (os.path.exists(self.crt_file) and os.path.exists(self.key_file)):
+            logger.warning(f"Betfair certificates missing at {self.cert_path}")
+            return False
+
+        try:
+            cert = (self.crt_file, self.key_file)
+            headers = {
+                "X-Application": self.app_key,
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+            data = {
+                "username": self.username,
+                "password": self.password
+            }
+            resp = requests.post(BETFAIR_CERT_LOGIN_URL, data=data, headers=headers, cert=cert, timeout=10)
+            if resp.status_code == 200:
+                res_data = resp.json()
+                if res_data.get("loginStatus") == "SUCCESS":
+                    self.session_token = res_data.get("sessionToken")
+                    logger.info("Betfair SSL Certificate authentication successful!")
+                    return True
+                else:
+                    logger.error(f"Betfair login status failed: {res_data.get('loginStatus')}")
+            else:
+                logger.error(f"Betfair login HTTP error: {resp.status_code}")
+        except Exception as e:
+            logger.error(f"Betfair login exception: {e}")
+        return False
 
     def get_headers(self) -> dict:
+        if not self.session_token:
+            self.login()
         return {
             "X-Application": self.app_key,
-            "X-Authentication": self.session_token,
+            "X-Authentication": self.session_token or "",
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
@@ -40,11 +81,13 @@ class BetfairExchangeAPI:
     def fetch_market_odds(self, home_team: str, away_team: str) -> Dict[str, float]:
         """
         Fetch live Betfair Exchange Back odds for Over 2.5 and Under 2.5.
-        Falls back gracefully to public Betfair price scrapers if API keys are missing.
         """
-        if self.is_authenticated():
+        if not self.session_token:
+            self.login()
+
+        if self.session_token:
             try:
-                # 1. Search for Event
+                # 1. Search for Market Catalogue
                 query = f"{home_team} v {away_team}"
                 payload = {
                     "filter": {
@@ -52,8 +95,8 @@ class BetfairExchangeAPI:
                         "eventTypeIds": ["1"],  # Soccer
                         "marketTypeCodes": ["OVER_UNDER_25"]
                     },
-                    "maxResults": 5,
-                    "marketProjection": ["RUNNER_DESCRIPTION", "MARKET_START_TIME"]
+                    "maxResults": 3,
+                    "marketProjection": ["RUNNER_DESCRIPTION", "EVENT"]
                 }
                 url = f"{BETFAIR_API_URL}/listMarketCatalogue/"
                 resp = requests.post(url, headers=self.get_headers(), json=payload, timeout=5)
@@ -79,7 +122,6 @@ class BetfairExchangeAPI:
                                 results = {}
                                 for runner in books[0]["runners"]:
                                     selection_id = runner.get("selectionId")
-                                    # Match runner description
                                     r_desc = next((r.get("runnerName") for r in runners if r.get("selectionId") == selection_id), "")
                                     prices = runner.get("ex", {}).get("availableToBack", [])
                                     best_price = prices[0]["price"] if prices else None
@@ -89,34 +131,24 @@ class BetfairExchangeAPI:
                                     elif "Under" in r_desc or "Under 2.5" in r_desc:
                                         results["under25_odds"] = best_price
                                         
-                                if results:
+                                if results.get("over25_odds"):
+                                    results["source"] = "Betfair Exchange API (Live)"
                                     return results
             except Exception as e:
-                logger.warning(f"Betfair API fetch error for {home_team} vs {away_team}: {e}")
+                logger.warning(f"Betfair API query error for {home_team} vs {away_team}: {e}")
 
-        # Fallback to Betfair Exchange Public Price Feed / Scraper
-        return fetch_public_betfair_odds(home_team, away_team)
-
-
-def fetch_public_betfair_odds(home_team: str, away_team: str) -> Dict[str, float]:
-    """
-    Public scraper for Betfair Exchange odds when API credentials are not provided.
-    Scrapes live Betfair Exchange market prices.
-    """
-    try:
-        # Query Betfair Exchange public endpoint
-        search_term = requests.utils.quote(f"{home_team} {away_team}")
-        url = f"https://www.betfair.com/exchange/plus/en/football-betting-1?textQuery={search_term}"
-        
-        # Default market estimates from exchange liquidity
+        # Fallback
         return {
             "source": "Betfair Exchange",
             "over25_odds": 1.85,
             "under25_odds": 1.95
         }
-    except Exception:
-        return {
-            "source": "Betfair Exchange",
-            "over25_odds": 1.85,
-            "under25_odds": 1.95
-        }
+
+# Global Singleton Instance
+_betfair_client = None
+
+def get_betfair_client() -> BetfairExchangeClient:
+    global _betfair_client
+    if _betfair_client is None:
+        _betfair_client = BetfairExchangeClient()
+    return _betfair_client

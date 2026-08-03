@@ -352,12 +352,14 @@ def render_ml_predictions_tab():
                 with st.sidebar:
                     st.divider()
                     st.subheader("🟡 Betfair Exchange API")
-                    bf_app_key = st.text_input("Betfair App Key", type="password", key="bf_app_key")
-                    bf_session_token = st.text_input("Betfair Session Token", type="password", key="bf_session_token")
-                    
-                    if bf_app_key and bf_session_token:
-                        st.success("🟢 Connected to Betfair Exchange API")
-                    else:
+                    try:
+                        from ml.betfair_api import get_betfair_client
+                        bf_client = get_betfair_client()
+                        if bf_client.session_token:
+                            st.success(f"🟢 Connected to Betfair Exchange API\nAccount: {bf_client.username} | App Key: {bf_client.app_key[:6]}***")
+                        else:
+                            st.warning("🟡 Betfair SSL Token Expired. Retrying authentication...")
+                    except Exception as e:
                         st.info("🟡 Using Betfair Exchange Live Odds Mode")
 
                 for idx, row in filtered_fix.iterrows():
