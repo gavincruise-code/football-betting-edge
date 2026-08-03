@@ -380,27 +380,45 @@ def render_ml_predictions_tab():
                         o25 = eo1.number_input(f"Betfair Over 2.5 Odds ({h_team})", value=init_o25, step=0.05, key=f"o25_in_{idx}")
                         u25 = eo2.number_input(f"Betfair Under 2.5 Odds ({a_team})", value=init_u25, step=0.05, key=f"u25_in_{idx}")
 
-                    # Compute model probability with Unicode normalized team matching
-                    master_cache = st.session_state.get('ml_feat_df', None)
-                    model_prob_o25 = 0.55  # baseline estimation if no cache
+                    # Dynamic Team Model Probability & Live Betfair Odds Computation
+                    league_name = row.get('league', 'Unknown')
+                    
+                    if 'league_history_cache' not in st.session_state:
+                        st.session_state['league_history_cache'] = {}
 
-                    if master_cache is not None and not master_cache.empty:
+                    lg_df = st.session_state['league_history_cache'].get(league_name, None)
+                    if lg_df is None:
+                        try:
+                            from data_utils import download_league_data
+                            code_reverse = {
+                                'EPL': 'E0', 'Championship': 'E1', 'La_Liga': 'SP1', 'Bundesliga': 'D1',
+                                'Serie_A': 'I1', 'Ligue_1': 'F1', 'Scottish Premiership': 'SC0',
+                                'USA (MLS)': 'USA', 'Argentina': 'ARG', 'Brazil': 'BRA', 'Mexico': 'MEX',
+                                'Japan': 'JPN', 'China': 'CHN', 'Sweden': 'SWE', 'Norway': 'NOR',
+                                'Denmark': 'DNK', 'Finland': 'FIN', 'Poland': 'POL', 'Romania': 'ROU',
+                                'Switzerland': 'SWZ', 'Austria': 'AUT'
+                            }
+                            l_code = code_reverse.get(league_name, league_name)
+                            lg_df = download_league_data(l_code)
+                            st.session_state['league_history_cache'][league_name] = lg_df
+                        except Exception:
+                            lg_df = pd.DataFrame()
+
+                    model_prob_o25 = 0.55
+
+                    if lg_df is not None and not lg_df.empty:
                         nh = norm_team(h_team)
                         na = norm_team(a_team)
-                        
-                        h_hist = master_cache[master_cache['HomeTeam'].apply(norm_team) == nh]
-                        if h_hist.empty:
-                            h_hist = master_cache[(master_cache['HomeTeam'].apply(norm_team).str.contains(nh[:4])) | (master_cache['AwayTeam'].apply(norm_team).str.contains(nh[:4]))]
 
-                        a_hist = master_cache[master_cache['AwayTeam'].apply(norm_team) == na]
-                        if a_hist.empty:
-                            a_hist = master_cache[(master_cache['HomeTeam'].apply(norm_team).str.contains(na[:4])) | (master_cache['AwayTeam'].apply(norm_team).str.contains(na[:4]))]
+                        h_matches = lg_df[(lg_df['HomeTeam'].apply(norm_team).str.contains(nh[:4])) | (lg_df['AwayTeam'].apply(norm_team).str.contains(nh[:4]))] if 'HomeTeam' in lg_df.columns else pd.DataFrame()
+                        a_matches = lg_df[(lg_df['HomeTeam'].apply(norm_team).str.contains(na[:4])) | (lg_df['AwayTeam'].apply(norm_team).str.contains(na[:4]))] if 'AwayTeam' in lg_df.columns else pd.DataFrame()
 
-                        if not h_hist.empty and not a_hist.empty:
-                            h_xg = h_hist['xG_avg_H_H_10'].iloc[-1] if 'xG_avg_H_H_10' in h_hist.columns else 1.6
-                            a_xg = a_hist['xG_avg_A_A_10'].iloc[-1] if 'xG_avg_A_A_10' in a_hist.columns else 1.3
-                            lam_h = (h_xg + 1.1) / 2.0 if pd.notna(h_xg) else 1.5
-                            lam_a = (a_xg + 1.2) / 2.0 if pd.notna(a_xg) else 1.2
+                        if not h_matches.empty and not a_matches.empty:
+                            lam_h = h_matches['FTHG'].dropna().tail(10).mean() if 'FTHG' in h_matches.columns else 1.4
+                            lam_a = a_matches['FTAG'].dropna().tail(10).mean() if 'FTAG' in a_matches.columns else 1.1
+                            if pd.isna(lam_h) or lam_h <= 0: lam_h = 1.4
+                            if pd.isna(lam_a) or lam_a <= 0: lam_a = 1.1
+
                             sm = score_matrix(lam_h, lam_a)
                             model_prob_o25 = sum(sm[i][j] for i in range(7) for j in range(7) if i + j >= 3)
                     
