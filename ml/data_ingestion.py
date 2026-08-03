@@ -265,10 +265,53 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
         except Exception as e:
             logger.warning(f"Failed to fetch global upcoming for {code}: {e}")
 
+    # Source 3: Real-Time Live Scoreboard API (captures same-day live fixtures across Sweden, MLS, Europe, Americas, Asia)
+    try:
+        import requests
+        espn_slugs = {
+            'swe.1': 'Sweden', 'usa.1': 'USA (MLS)', 'eng.1': 'EPL', 'esp.1': 'La_Liga',
+            'ger.1': 'Bundesliga', 'ita.1': 'Serie_A', 'fra.1': 'Ligue_1', 'arg.1': 'Argentina',
+            'bra.1': 'Brazil', 'mex.1': 'Mexico', 'jpn.1': 'Japan', 'nor.1': 'Norway',
+            'dnk.1': 'Denmark', 'fin.1': 'Finland', 'pol.1': 'Poland', 'aut.1': 'Austria',
+            'sco.1': 'Scottish Premiership', 'eng.2': 'Championship'
+        }
+        live_api_rows = []
+        for slug, lg_name in espn_slugs.items():
+            try:
+                resp = requests.get(f"https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/scoreboard", timeout=3)
+                if resp.status_code == 200:
+                    events = resp.json().get('events', [])
+                    for ev in events:
+                        comps = ev.get('competitions', [{}])[0].get('competitors', [])
+                        if len(comps) >= 2:
+                            h_name = next((c.get('team', {}).get('displayName') for c in comps if c.get('homeAway') == 'home'), comps[0].get('team', {}).get('displayName'))
+                            a_name = next((c.get('team', {}).get('displayName') for c in comps if c.get('homeAway') == 'away'), comps[1].get('team', {}).get('displayName'))
+                            ev_date = pd.to_datetime(ev.get('date'), errors='coerce')
+                            if pd.notnull(ev_date) and ev_date.tz_localize(None) >= today:
+                                live_api_rows.append({
+                                    'league': lg_name,
+                                    'Date': ev_date.tz_localize(None),
+                                    'Time': ev_date.strftime('%H:%M'),
+                                    'HomeTeam': h_name,
+                                    'AwayTeam': a_name,
+                                    'over25_odds': 1.85,
+                                    'under25_odds': 1.95,
+                                    'draw_odds': 3.40
+                                })
+            except Exception:
+                continue
+
+        if live_api_rows:
+            api_df = pd.DataFrame(live_api_rows)
+            all_upcoming.append(api_df)
+    except Exception as e:
+        logger.warning(f"Failed to fetch live API scoreboard: {e}")
+
     if not all_upcoming:
         return pd.DataFrame()
 
     res = pd.concat(all_upcoming, ignore_index=True)
     if 'Date' in res.columns:
+        res = res.drop_duplicates(subset=['league', 'HomeTeam', 'AwayTeam'], keep='first')
         res = res.sort_values('Date').reset_index(drop=True)
     return res
