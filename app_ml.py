@@ -336,10 +336,8 @@ def render_ml_predictions_tab():
                     u25 = row.get('under25_odds', np.nan)
                     draw_o = row.get('draw_odds', np.nan)
 
-                    if pd.isna(o25) or o25 <= 1.0:
+                    if pd.isna(o25):
                         continue
-
-                    imp_o25 = implied_probability(o25)
 
                     # Compute default or model probability from rolling team stats if available in cache
                     master_cache = st.session_state.get('ml_feat_df', None)
@@ -355,9 +353,43 @@ def render_ml_predictions_tab():
                             lam_a = (a_xg + 1.2) / 2.0 if pd.notna(a_xg) else 1.2
                             sm = score_matrix(lam_h, lam_a)
                             model_prob_o25 = sum(sm[i][j] for i in range(7) for j in range(7) if i + j >= 3)
+                    
+                    model_prob_u25 = 1.0 - model_prob_o25
+
+                    imp_o25 = implied_probability(o25) if pd.notna(o25) and o25 > 1.0 else 0.5
+                    imp_u25 = implied_probability(u25) if pd.notna(u25) and u25 > 1.0 else 0.5
 
                     edge_o25 = model_prob_o25 - imp_o25
-                    is_val = edge_o25 >= edge_filter
+                    edge_u25 = model_prob_u25 - imp_u25
+
+                    val_o25 = edge_o25 >= edge_filter
+                    val_u25 = edge_u25 >= edge_filter
+                    is_val = val_o25 or val_u25
+
+                    if val_o25 and val_u25:
+                        best_market = "Over 2.5" if edge_o25 >= edge_u25 else "Under 2.5"
+                        best_edge = max(edge_o25, edge_u25)
+                        best_odds = o25 if best_market == "Over 2.5" else u25
+                        best_prob = model_prob_o25 if best_market == "Over 2.5" else model_prob_u25
+                        best_imp = imp_o25 if best_market == "Over 2.5" else imp_u25
+                    elif val_o25:
+                        best_market = "Over 2.5"
+                        best_edge = edge_o25
+                        best_odds = o25
+                        best_prob = model_prob_o25
+                        best_imp = imp_o25
+                    elif val_u25:
+                        best_market = "Under 2.5"
+                        best_edge = edge_u25
+                        best_odds = u25
+                        best_prob = model_prob_u25
+                        best_imp = imp_u25
+                    else:
+                        best_market = "Over 2.5" if edge_o25 >= edge_u25 else "Under 2.5"
+                        best_edge = max(edge_o25, edge_u25)
+                        best_odds = o25 if edge_o25 >= edge_u25 else u25
+                        best_prob = model_prob_o25 if edge_o25 >= edge_u25 else model_prob_u25
+                        best_imp = imp_o25 if edge_o25 >= edge_u25 else imp_u25
 
                     if val_only and not is_val:
                         continue
@@ -375,10 +407,11 @@ def render_ml_predictions_tab():
                             <div>
                                 <span style="color: #888; font-size: 0.85rem;">{row['league']} • {m_date} {m_time}</span>
                                 <h4 style="margin: 4px 0;">{h_team} vs {a_team}</h4>
+                                <span style="color: #00d4aa; font-weight: 600; font-size: 0.95rem;">Recommended Bet: {best_market} Goals</span>
                             </div>
                             <div style="text-align: right;">
                                 <span style="font-size: 1.2rem; font-weight: bold; color: {'#00d4aa' if is_val else '#ff4b4b'};">
-                                    {'✅ +EV OPPORTUNITY' if is_val else '❌ NO VALUE'}
+                                    {'✅ +EV OPPORTUNITY (' + best_market + ')' if is_val else '❌ NO VALUE'}
                                 </span>
                             </div>
                         </div>
@@ -386,11 +419,11 @@ def render_ml_predictions_tab():
                     """, unsafe_allow_html=True)
 
                     fc1, fc2, fc3, fc4, fc5 = st.columns(5)
-                    fc1.metric("Bookie Odds", f"{o25:.2f}")
-                    fc2.metric("Implied Prob", f"{imp_o25*100:.1f}%")
-                    fc3.metric("Model Prob", f"{model_prob_o25*100:.1f}%")
-                    fc4.metric("Edge %", f"{edge_o25*100:+.1f}%", delta=f"{edge_o25*100:+.1f}%" if is_val else None)
-                    fc5.metric("Quarter-Kelly Stake", f"£{kelly_stake(model_prob_o25, o25, 1000.0):.2f}")
+                    fc1.metric("Bookie Odds", f"{best_odds:.2f}" if pd.notna(best_odds) else "N/A")
+                    fc2.metric("Implied Prob", f"{best_imp*100:.1f}%")
+                    fc3.metric("Model Prob", f"{best_prob*100:.1f}%")
+                    fc4.metric(f"Edge % ({best_market})", f"{best_edge*100:+.1f}%", delta=f"{best_edge*100:+.1f}%" if is_val else None)
+                    fc5.metric("Quarter-Kelly Stake", f"£{kelly_stake(best_prob, best_odds, 1000.0):.2f}" if pd.notna(best_odds) and best_odds > 1 else "£0.00")
 
                     st.write("")
 
