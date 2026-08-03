@@ -39,6 +39,16 @@ def expected_value(model_prob: float, decimal_odds: float, stake: float = 10.0) 
     return (model_prob * decimal_odds * stake) - stake
 
 try:
+    from ml.config import UNDERSTAT_LEAGUES
+except Exception:
+    UNDERSTAT_LEAGUES = {
+        "EPL": "EPL", "La_Liga": "La_Liga", "Bundesliga": "Bundesliga", "Serie_A": "Serie_A", "Ligue_1": "Ligue_1",
+        "USA (MLS)": "USA", "Argentina": "ARG", "Brazil": "BRA", "Mexico": "MEX", "Japan": "JPN", "China": "CHN",
+        "Sweden": "SWE", "Norway": "NOR", "Denmark": "DNK", "Finland": "FIN", "Poland": "POL", "Romania": "ROU",
+        "Switzerland": "SWZ", "Austria": "AUT"
+    }
+
+try:
     from ml.calibration import kelly_stake
 except Exception:
     def kelly_stake(model_prob: float, decimal_odds: float, bankroll: float = 1000.0, fraction: float = 0.25, max_pct: float = 0.05) -> float:
