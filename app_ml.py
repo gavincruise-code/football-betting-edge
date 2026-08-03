@@ -342,25 +342,46 @@ def render_ml_predictions_tab():
                 # Process and display fixture opportunity cards
                 opportunities_found = 0
 
+                import unicodedata
+                def norm_team(name):
+                    if not name: return ""
+                    n = ''.join(c for c in unicodedata.normalize('NFD', str(name)) if unicodedata.category(c) != 'Mn')
+                    return n.replace('IFK ', '').replace('FC ', '').replace('SK ', '').strip().lower()
+
                 for idx, row in filtered_fix.iterrows():
                     h_team = row['HomeTeam']
                     a_team = row['AwayTeam']
                     m_date = row['Date'].strftime('%Y-%m-%d') if pd.notnull(row['Date']) else 'Upcoming'
                     m_time = row.get('Time', '')
-                    o25 = row.get('over25_odds', np.nan)
-                    u25 = row.get('under25_odds', np.nan)
-                    draw_o = row.get('draw_odds', np.nan)
+                    raw_o25 = row.get('over25_odds', np.nan)
+                    raw_u25 = row.get('under25_odds', np.nan)
 
-                    if pd.isna(o25):
-                        continue
+                    # Default fallback odds
+                    init_o25 = float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 1.85
+                    init_u25 = float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.95
 
-                    # Compute default or model probability from rolling team stats if available in cache
+                    # Expandable or inline Live Odds Adjustment
+                    with st.expander(f"⚙️ Adjust Live Odds for {h_team} vs {a_team}", expanded=False):
+                        eo1, eo2 = st.columns(2)
+                        o25 = eo1.number_input(f"Over 2.5 Odds ({h_team})", value=init_o25, step=0.05, key=f"o25_in_{idx}")
+                        u25 = eo2.number_input(f"Under 2.5 Odds ({a_team})", value=init_u25, step=0.05, key=f"u25_in_{idx}")
+
+                    # Compute model probability with Unicode normalized team matching
                     master_cache = st.session_state.get('ml_feat_df', None)
                     model_prob_o25 = 0.55  # baseline estimation if no cache
 
                     if master_cache is not None and not master_cache.empty:
-                        h_hist = master_cache[(master_cache['HomeTeam'] == h_team) | (master_cache['AwayTeam'] == h_team)]
-                        a_hist = master_cache[(master_cache['HomeTeam'] == a_team) | (master_cache['AwayTeam'] == a_team)]
+                        nh = norm_team(h_team)
+                        na = norm_team(a_team)
+                        
+                        h_hist = master_cache[master_cache['HomeTeam'].apply(norm_team) == nh]
+                        if h_hist.empty:
+                            h_hist = master_cache[(master_cache['HomeTeam'].apply(norm_team).str.contains(nh[:4])) | (master_cache['AwayTeam'].apply(norm_team).str.contains(nh[:4]))]
+
+                        a_hist = master_cache[master_cache['AwayTeam'].apply(norm_team) == na]
+                        if a_hist.empty:
+                            a_hist = master_cache[(master_cache['HomeTeam'].apply(norm_team).str.contains(na[:4])) | (master_cache['AwayTeam'].apply(norm_team).str.contains(na[:4]))]
+
                         if not h_hist.empty and not a_hist.empty:
                             h_xg = h_hist['xG_avg_H_H_10'].iloc[-1] if 'xG_avg_H_H_10' in h_hist.columns else 1.6
                             a_xg = a_hist['xG_avg_A_A_10'].iloc[-1] if 'xG_avg_A_A_10' in a_hist.columns else 1.3
