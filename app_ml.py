@@ -370,9 +370,14 @@ def render_ml_predictions_tab():
                     raw_o25 = row.get('over25_odds', np.nan)
                     raw_u25 = row.get('under25_odds', np.nan)
 
-                    # Default fallback odds from Betfair Exchange
-                    init_o25 = float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 1.85
-                    init_u25 = float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.95
+                    # Query live Betfair Exchange odds for fixture
+                    try:
+                        bf_odds = bf_client.fetch_market_odds(h_team, a_team) if 'bf_client' in locals() else {}
+                        init_o25 = float(bf_odds.get('over25_odds', raw_o25)) if pd.notna(bf_odds.get('over25_odds', raw_o25)) and float(bf_odds.get('over25_odds', raw_o25)) > 1.0 else (float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00)
+                        init_u25 = float(bf_odds.get('under25_odds', raw_u25)) if pd.notna(bf_odds.get('under25_odds', raw_u25)) and float(bf_odds.get('under25_odds', raw_u25)) > 1.0 else (float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80)
+                    except Exception:
+                        init_o25 = float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00
+                        init_u25 = float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80
 
                     # Expandable or inline Live Betfair Odds Adjustment
                     with st.expander(f"🟡 Adjust Betfair Exchange Odds: {h_team} vs {a_team}", expanded=False):
