@@ -355,13 +355,18 @@ def render_ml_predictions_tab():
                     try:
                         from ml.betfair_api import get_betfair_client
                         bf_client = get_betfair_client()
-                        if st.button("🔄 Re-connect Betfair API"):
+
+                        pwd_in = st.text_input("Betfair Password", value=bf_client.password, type="password", key="sidebar_bf_pwd")
+                        if pwd_in and pwd_in != bf_client.password:
+                            bf_client.password = pwd_in
+
+                        if st.button("🔄 Connect to Betfair"):
                             bf_client.login()
 
                         if bf_client.session_token:
                             st.success(f"🟢 Connected to Betfair Exchange API\nAccount: {bf_client.username}")
                         else:
-                            st.warning(f"🟡 Betfair Status: {bf_client.last_status}\n\nUpdate `BETFAIR_PASSWORD` in your local `.env` file and click Re-connect.")
+                            st.warning(f"🟡 Betfair Status: {bf_client.last_status}\n\nEnter your new password above and click Connect.")
                     except Exception as e:
                         st.info("🟡 Using Betfair Exchange Live Odds Mode")
 
