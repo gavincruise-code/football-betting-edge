@@ -129,6 +129,47 @@ def load_cached_dataset(league: str, season: int) -> Optional[pd.DataFrame]:
             logger.warning(f"Failed to read cache {file_path}: {e}")
     return None
 
+def impute_missing_ou_odds(df: pd.DataFrame, default_margin: float = 0.05) -> pd.DataFrame:
+    """
+    Impute missing Over/Under 2.5 odds for extra/global leagues (ARG, CHN, USA, BRA, MEX, JPN, etc.)
+    using a zero-lookahead rolling goal Poisson model with standard 5% bookmaker overround.
+    """
+    if df.empty:
+        return df
+
+    df = df.copy()
+    if 'over25_odds' not in df.columns:
+        df['over25_odds'] = np.nan
+    if 'under25_odds' not in df.columns:
+        df['under25_odds'] = np.nan
+
+    missing = df['over25_odds'].isna() | (df['over25_odds'] <= 1.0)
+    if not missing.any():
+        return df
+
+    try:
+        from poisson_engine import prob_over_n_goals
+        if 'FTHG' in df.columns and 'FTAG' in df.columns:
+            tot_g = (df['FTHG'].fillna(1.2) + df['FTAG'].fillna(1.0)).values
+        else:
+            tot_g = np.full(len(df), 2.4)
+
+        shifted_g = pd.Series(tot_g).shift(1)
+        rolling_g = shifted_g.rolling(50, min_periods=5).mean().fillna(2.4).values
+
+        o25_p = np.array([prob_over_n_goals(lam, 2) for lam in rolling_g])
+        u25_p = np.maximum(0.01, 1.0 - o25_p)
+
+        est_o = np.round(1.0 / (o25_p * (1.0 + default_margin / 2.0)), 2)
+        est_u = np.round(1.0 / (u25_p * (1.0 + default_margin / 2.0)), 2)
+
+        df.loc[missing, 'over25_odds'] = np.maximum(1.10, est_o[missing])
+        df.loc[missing, 'under25_odds'] = np.maximum(1.10, est_u[missing])
+    except Exception as e:
+        logger.warning(f"Error imputing missing O/U odds: {e}")
+
+    return df
+
 def build_master_dataset(
     leagues: List[str] = None,
     seasons: List[int] = None,
@@ -154,6 +195,7 @@ def build_master_dataset(
             if use_cache:
                 cached_df = load_cached_dataset(lg, 2024)
                 if cached_df is not None and not cached_df.empty:
+                    cached_df = impute_missing_ou_odds(cached_df)
                     all_dfs.append(cached_df)
                     continue
 
@@ -163,6 +205,7 @@ def build_master_dataset(
                     g_df['league'] = lg
                     g_df['xG_home'] = np.nan
                     g_df['xG_away'] = np.nan
+                    g_df = impute_missing_ou_odds(g_df)
                     if use_cache:
                         cache_dataset(g_df, lg, 2024)
                     all_dfs.append(g_df)
@@ -175,6 +218,7 @@ def build_master_dataset(
                 if use_cache:
                     cached_df = load_cached_dataset(lg, s_year)
                     if cached_df is not None and not cached_df.empty:
+                        cached_df = impute_missing_ou_odds(cached_df)
                         all_dfs.append(cached_df)
                         continue
 
@@ -186,6 +230,7 @@ def build_master_dataset(
                 if not merged_df.empty:
                     merged_df['league'] = lg
                     merged_df['season_year'] = s_year
+                    merged_df = impute_missing_ou_odds(merged_df)
                     if use_cache:
                         cache_dataset(merged_df, lg, s_year)
                     all_dfs.append(merged_df)
@@ -199,6 +244,7 @@ def build_master_dataset(
         master = master.sort_values('Date').reset_index(drop=True)
         if 'season_year' not in master.columns:
             master['season_year'] = master['Date'].dt.year
+    master = impute_missing_ou_odds(master)
     return master
 
 
