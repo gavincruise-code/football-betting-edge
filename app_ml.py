@@ -357,11 +357,8 @@ def render_ml_predictions_tab():
                         bf_client = get_betfair_client()
 
                         pwd_in = st.text_input("Betfair Password", value=bf_client.password, type="password", key="sidebar_bf_pwd")
-                        if pwd_in and pwd_in != bf_client.password:
-                            bf_client.password = pwd_in
-
                         if st.button("🔄 Connect to Betfair"):
-                            bf_client.login()
+                            bf_client.login(password=pwd_in if pwd_in else None)
 
                         if bf_client.session_token:
                             st.success(f"🟢 Connected to Betfair Exchange API\nAccount: {bf_client.username}")

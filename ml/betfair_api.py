@@ -48,15 +48,43 @@ class BetfairExchangeClient:
         # Attempt initial login if credentials provided
         self.login()
 
-    def login(self) -> bool:
+    def set_credentials(self, username: Optional[str] = None, password: Optional[str] = None, app_key: Optional[str] = None):
+        """Update runtime credentials and persist to local .env file."""
+        if username: self.username = username
+        if password: self.password = password
+        if app_key: self.app_key = app_key
+
+        # Persist updated credentials to .env file on disk
+        env_path = ".env"
+        if os.path.exists(env_path):
+            try:
+                lines = []
+                with open(env_path, "r") as f:
+                    for line in f:
+                        if line.startswith("BETFAIR_PASSWORD=") and password:
+                            lines.append(f"BETFAIR_PASSWORD={password}\n")
+                        elif line.startswith("BETFAIR_USERNAME=") and username:
+                            lines.append(f"BETFAIR_USERNAME={username}\n")
+                        elif line.startswith("BETFAIR_APP_KEY=") and app_key:
+                            lines.append(f"BETFAIR_APP_KEY={app_key}\n")
+                        else:
+                            lines.append(line)
+                with open(env_path, "w") as f:
+                    f.writelines(lines)
+            except Exception as e:
+                logger.warning(f"Could not persist .env updates: {e}")
+
+    def login(self, password: Optional[str] = None) -> bool:
         """
         Authenticate with Betfair via SSL certificate or standard API login.
         """
-        # Reload env variables in case .env was modified
-        load_dotenv(override=True)
-        self.username = os.getenv("BETFAIR_USERNAME", self.username)
-        self.password = os.getenv("BETFAIR_PASSWORD", self.password)
-        self.app_key = os.getenv("BETFAIR_APP_KEY", self.app_key)
+        if password:
+            self.set_credentials(password=password)
+        else:
+            load_dotenv(override=True)
+            self.username = os.getenv("BETFAIR_USERNAME", self.username)
+            self.password = os.getenv("BETFAIR_PASSWORD", self.password)
+            self.app_key = os.getenv("BETFAIR_APP_KEY", self.app_key)
 
         if not (self.username and self.password and self.app_key):
             self.last_status = "Missing credentials in .env file"
