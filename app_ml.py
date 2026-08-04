@@ -294,11 +294,6 @@ def render_ml_predictions_tab():
             if fetch_btn:
                 with st.spinner("Fetching live upcoming fixtures and Betfair Exchange odds..."):
                     try:
-                        # Clear stale widget odds session state values
-                        for k in list(st.session_state.keys()):
-                            if k.startswith("o25_") or k.startswith("u25_"):
-                                del st.session_state[k]
-
                         import importlib
                         import ml.data_ingestion
                         importlib.reload(ml.data_ingestion)
@@ -395,22 +390,19 @@ def render_ml_predictions_tab():
                         init_o25 = float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00
                         init_u25 = float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80
 
-                    # Expandable or inline Live Betfair Odds Adjustment
-                    with st.expander(f"🟡 Adjust Betfair Exchange Odds: {h_team} vs {a_team}", expanded=False):
+                    # Use live Betfair odds directly for calculations
+                    o25 = init_o25
+                    u25 = init_u25
+
+                    # Optional manual override via expander
+                    with st.expander(f"⚙️ Override Odds: {h_team} vs {a_team} (Live: O2.5 {init_o25:.2f} / U2.5 {init_u25:.2f})", expanded=False):
                         eo1, eo2 = st.columns(2)
-                        match_key_o25 = f"o25_{norm_team(h_team)}_{norm_team(a_team)}"
-                        match_key_u25 = f"u25_{norm_team(h_team)}_{norm_team(a_team)}"
-
-                        if match_key_o25 not in st.session_state or st.session_state.get(f"_bf_o25_{match_key_o25}") != init_o25:
-                            st.session_state[match_key_o25] = init_o25
-                            st.session_state[f"_bf_o25_{match_key_o25}"] = init_o25
-
-                        if match_key_u25 not in st.session_state or st.session_state.get(f"_bf_u25_{match_key_u25}") != init_u25:
-                            st.session_state[match_key_u25] = init_u25
-                            st.session_state[f"_bf_u25_{match_key_u25}"] = init_u25
-
-                        o25 = eo1.number_input(f"Betfair Over 2.5 Odds ({h_team})", step=0.05, key=match_key_o25)
-                        u25 = eo2.number_input(f"Betfair Under 2.5 Odds ({a_team})", step=0.05, key=match_key_u25)
+                        manual_o25 = eo1.number_input(f"Over 2.5 Odds", value=init_o25, step=0.05, key=f"mo25_{idx}")
+                        manual_u25 = eo2.number_input(f"Under 2.5 Odds", value=init_u25, step=0.05, key=f"mu25_{idx}")
+                        if manual_o25 != init_o25:
+                            o25 = manual_o25
+                        if manual_u25 != init_u25:
+                            u25 = manual_u25
 
                     # Dynamic Team Model Probability & Live Betfair Odds Computation
                     league_name = row.get('league', 'Unknown')
