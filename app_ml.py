@@ -292,15 +292,26 @@ def render_ml_predictions_tab():
 
         if fetch_btn or 'live_fixtures_df' in st.session_state:
             if fetch_btn:
-                with st.spinner("Fetching live upcoming fixtures and market odds..."):
+                with st.spinner("Fetching live upcoming fixtures and Betfair Exchange odds..."):
                     try:
+                        # Clear stale widget odds session state values
+                        for k in list(st.session_state.keys()):
+                            if k.startswith("o25_in_") or k.startswith("u25_in_"):
+                                del st.session_state[k]
+
                         import importlib
                         import ml.data_ingestion
                         importlib.reload(ml.data_ingestion)
                         fix_df = ml.data_ingestion.fetch_upcoming_fixtures()
+
+                        # Refresh Betfair Exchange live market odds batch
+                        from ml.betfair_api import get_betfair_client
+                        bf_client = get_betfair_client()
+                        bf_client.fetch_all_live_markets()
+
                         if not fix_df.empty:
                             st.session_state['live_fixtures_df'] = fix_df
-                            st.success(f"Fetched {len(fix_df)} live upcoming fixtures across European leagues!")
+                            st.success(f"Fetched {len(fix_df)} live upcoming fixtures with live Betfair Exchange odds!")
                         else:
                             st.warning("No unplayed upcoming fixtures found in current feed.")
                     except Exception as e:
@@ -348,14 +359,14 @@ def render_ml_predictions_tab():
                     n = ''.join(c for c in unicodedata.normalize('NFD', str(name)) if unicodedata.category(c) != 'Mn')
                     return n.replace('IFK ', '').replace('FC ', '').replace('SK ', '').strip().lower()
 
-                # Betfair Exchange API Integration
+                # Betfair Exchange API Client Initialization
+                from ml.betfair_api import get_betfair_client
+                bf_client = get_betfair_client()
+
                 with st.sidebar:
                     st.divider()
                     st.subheader("🟡 Betfair Exchange API")
                     try:
-                        from ml.betfair_api import get_betfair_client
-                        bf_client = get_betfair_client()
-
                         if bf_client.session_token:
                             st.success(f"🟢 Connected to Betfair Exchange API\nAccount: {bf_client.username}")
                         else:
@@ -375,9 +386,9 @@ def render_ml_predictions_tab():
 
                     # Query live Betfair Exchange odds for fixture
                     try:
-                        bf_odds = bf_client.fetch_market_odds(h_team, a_team) if 'bf_client' in locals() else {}
-                        init_o25 = float(bf_odds.get('over25_odds', raw_o25)) if pd.notna(bf_odds.get('over25_odds', raw_o25)) and float(bf_odds.get('over25_odds', raw_o25)) > 1.0 else (float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00)
-                        init_u25 = float(bf_odds.get('under25_odds', raw_u25)) if pd.notna(bf_odds.get('under25_odds', raw_u25)) and float(bf_odds.get('under25_odds', raw_u25)) > 1.0 else (float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80)
+                        bf_odds = bf_client.fetch_market_odds(h_team, a_team)
+                        init_o25 = float(bf_odds.get('over25_odds')) if pd.notna(bf_odds.get('over25_odds')) and float(bf_odds.get('over25_odds')) > 1.0 else (float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00)
+                        init_u25 = float(bf_odds.get('under25_odds')) if pd.notna(bf_odds.get('under25_odds')) and float(bf_odds.get('under25_odds')) > 1.0 else (float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80)
                     except Exception:
                         init_o25 = float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00
                         init_u25 = float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80
