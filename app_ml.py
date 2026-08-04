@@ -366,7 +366,11 @@ def render_ml_predictions_tab():
                         if bf_client.session_token:
                             st.success(f"🟢 Connected to Betfair Exchange API\nAccount: {bf_client.username}")
                         else:
-                            st.warning(f"🟡 Betfair Status: {bf_client.last_status}\n\nEnter your new password above and click Connect.")
+                            st.warning(f"🟡 Betfair Status: {bf_client.last_status}")
+                            if "ACCOUNT_PENDING_PASSWORD_CHANGE" in str(bf_client.last_status):
+                                st.info("👉 **Action Required:** Betfair requires a 1-time web login at [betfair.com](https://www.betfair.com) in your browser to confirm your password change. Once logged in, click **Connect to Betfair** above!")
+                            elif "INVALID" in str(bf_client.last_status):
+                                st.info("👉 Please check your password typed above and click **Connect to Betfair**.")
                     except Exception as e:
                         st.info("🟡 Using Betfair Exchange Live Odds Mode")
 

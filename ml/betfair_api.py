@@ -50,7 +50,7 @@ class BetfairExchangeClient:
 
     def login(self) -> bool:
         """
-        Authenticate with Betfair via SSL certificate.
+        Authenticate with Betfair via SSL certificate or standard API login.
         """
         # Reload env variables in case .env was modified
         load_dotenv(override=True)
@@ -63,38 +63,56 @@ class BetfairExchangeClient:
             logger.info("Betfair credentials not set in environment variables.")
             return False
 
-        if not (os.path.exists(self.crt_file) and os.path.exists(self.key_file)):
-            self.last_status = f"SSL Certificates missing at {self.cert_path}"
-            logger.info(f"Betfair certificates missing at {self.cert_path}")
-            return False
+        # Method 1: SSL Certificate Login
+        if os.path.exists(self.crt_file) and os.path.exists(self.key_file):
+            try:
+                cert = (self.crt_file, self.key_file)
+                headers = {
+                    "X-Application": self.app_key,
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+                data = {"username": self.username, "password": self.password}
+                resp = requests.post(BETFAIR_CERT_LOGIN_URL, data=data, headers=headers, cert=cert, timeout=10)
+                if resp.status_code == 200:
+                    res_data = resp.json()
+                    status = res_data.get("loginStatus", "UNKNOWN_ERROR")
+                    if status == "SUCCESS":
+                        self.session_token = res_data.get("sessionToken")
+                        self.last_status = "SUCCESS"
+                        logger.info("Betfair SSL Certificate authentication successful!")
+                        return True
+                    else:
+                        self.last_status = status
+            except Exception as e:
+                logger.warning(f"Cert login failed: {e}")
 
+        # Method 2: Standard SSO API Login
         try:
-            cert = (self.crt_file, self.key_file)
             headers = {
                 "X-Application": self.app_key,
+                "Accept": "application/json",
                 "Content-Type": "application/x-www-form-urlencoded"
             }
-            data = {
-                "username": self.username,
-                "password": self.password
-            }
-            resp = requests.post(BETFAIR_CERT_LOGIN_URL, data=data, headers=headers, cert=cert, timeout=10)
+            data = {"username": self.username, "password": self.password}
+            resp = requests.post("https://identitysso.betfair.com/api/login", data=data, headers=headers, timeout=10)
             if resp.status_code == 200:
                 res_data = resp.json()
-                status = res_data.get("loginStatus", "UNKNOWN_ERROR")
-                self.last_status = status
-                if status == "SUCCESS":
-                    self.session_token = res_data.get("sessionToken")
-                    logger.info("Betfair SSL Certificate authentication successful!")
+                status = res_data.get("status", "FAIL")
+                if status == "SUCCESS" and res_data.get("token"):
+                    self.session_token = res_data.get("token")
+                    self.last_status = "SUCCESS"
+                    logger.info("Betfair Standard API authentication successful!")
                     return True
                 else:
-                    logger.error(f"Betfair login status failed: {status}")
+                    err = res_data.get("error", "LOGIN_FAILED")
+                    self.last_status = err
+                    logger.error(f"Betfair Standard login failed: {err}")
             else:
                 self.last_status = f"HTTP Error {resp.status_code}"
-                logger.error(f"Betfair login HTTP error: {resp.status_code}")
         except Exception as e:
             self.last_status = f"Exception: {e}"
-            logger.error(f"Betfair login exception: {e}")
+            logger.error(f"Betfair Standard login exception: {e}")
+
         return False
 
     def get_headers(self) -> dict:
