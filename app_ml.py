@@ -296,7 +296,7 @@ def render_ml_predictions_tab():
                     try:
                         # Clear stale widget odds session state values
                         for k in list(st.session_state.keys()):
-                            if k.startswith("o25_in_") or k.startswith("u25_in_"):
+                            if k.startswith("o25_") or k.startswith("u25_"):
                                 del st.session_state[k]
 
                         import importlib
@@ -396,8 +396,10 @@ def render_ml_predictions_tab():
                     # Expandable or inline Live Betfair Odds Adjustment
                     with st.expander(f"🟡 Adjust Betfair Exchange Odds: {h_team} vs {a_team}", expanded=False):
                         eo1, eo2 = st.columns(2)
-                        o25 = eo1.number_input(f"Betfair Over 2.5 Odds ({h_team})", value=init_o25, step=0.05, key=f"o25_in_{idx}")
-                        u25 = eo2.number_input(f"Betfair Under 2.5 Odds ({a_team})", value=init_u25, step=0.05, key=f"u25_in_{idx}")
+                        match_key_o25 = f"o25_{norm_team(h_team)}_{norm_team(a_team)}"
+                        match_key_u25 = f"u25_{norm_team(h_team)}_{norm_team(a_team)}"
+                        o25 = eo1.number_input(f"Betfair Over 2.5 Odds ({h_team})", value=init_o25, step=0.05, key=match_key_o25)
+                        u25 = eo2.number_input(f"Betfair Under 2.5 Odds ({a_team})", value=init_u25, step=0.05, key=match_key_u25)
 
                     # Dynamic Team Model Probability & Live Betfair Odds Computation
                     league_name = row.get('league', 'Unknown')
