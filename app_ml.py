@@ -355,10 +355,13 @@ def render_ml_predictions_tab():
                     try:
                         from ml.betfair_api import get_betfair_client
                         bf_client = get_betfair_client()
+                        if st.button("🔄 Re-connect Betfair API"):
+                            bf_client.login()
+
                         if bf_client.session_token:
-                            st.success(f"🟢 Connected to Betfair Exchange API\nAccount: {bf_client.username} | App Key: {bf_client.app_key[:6]}***")
+                            st.success(f"🟢 Connected to Betfair Exchange API\nAccount: {bf_client.username}")
                         else:
-                            st.warning("🟡 Betfair SSL Token Expired. Retrying authentication...")
+                            st.warning(f"🟡 Betfair Status: {bf_client.last_status}\n\nUpdate `BETFAIR_PASSWORD` in your local `.env` file and click Re-connect.")
                     except Exception as e:
                         st.info("🟡 Using Betfair Exchange Live Odds Mode")
 

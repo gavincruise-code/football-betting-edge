@@ -11,6 +11,10 @@ import requests
 import unicodedata
 import pandas as pd
 from typing import Dict, Optional, Tuple, List
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +38,7 @@ class BetfairExchangeClient:
         self.app_key = app_key or os.getenv("BETFAIR_APP_KEY", "")
         self.cert_path = os.getenv("BETFAIR_CERT_PATH", "./certs")
         self.session_token = None
+        self.last_status = "Not authenticated"
         self.market_cache = {}
 
         # Resolve cert file paths
@@ -41,18 +46,25 @@ class BetfairExchangeClient:
         self.key_file = os.path.join(self.cert_path, "client-2048.key")
 
         # Attempt initial login if credentials provided
-        if self.username and self.password and self.app_key:
-            self.login()
+        self.login()
 
     def login(self) -> bool:
         """
         Authenticate with Betfair via SSL certificate.
         """
+        # Reload env variables in case .env was modified
+        load_dotenv(override=True)
+        self.username = os.getenv("BETFAIR_USERNAME", self.username)
+        self.password = os.getenv("BETFAIR_PASSWORD", self.password)
+        self.app_key = os.getenv("BETFAIR_APP_KEY", self.app_key)
+
         if not (self.username and self.password and self.app_key):
+            self.last_status = "Missing credentials in .env file"
             logger.info("Betfair credentials not set in environment variables.")
             return False
 
         if not (os.path.exists(self.crt_file) and os.path.exists(self.key_file)):
+            self.last_status = f"SSL Certificates missing at {self.cert_path}"
             logger.info(f"Betfair certificates missing at {self.cert_path}")
             return False
 
@@ -69,15 +81,19 @@ class BetfairExchangeClient:
             resp = requests.post(BETFAIR_CERT_LOGIN_URL, data=data, headers=headers, cert=cert, timeout=10)
             if resp.status_code == 200:
                 res_data = resp.json()
-                if res_data.get("loginStatus") == "SUCCESS":
+                status = res_data.get("loginStatus", "UNKNOWN_ERROR")
+                self.last_status = status
+                if status == "SUCCESS":
                     self.session_token = res_data.get("sessionToken")
                     logger.info("Betfair SSL Certificate authentication successful!")
                     return True
                 else:
-                    logger.error(f"Betfair login status failed: {res_data.get('loginStatus')}")
+                    logger.error(f"Betfair login status failed: {status}")
             else:
+                self.last_status = f"HTTP Error {resp.status_code}"
                 logger.error(f"Betfair login HTTP error: {resp.status_code}")
         except Exception as e:
+            self.last_status = f"Exception: {e}"
             logger.error(f"Betfair login exception: {e}")
         return False
 
