@@ -169,7 +169,7 @@ class BetfairExchangeClient:
                     "eventTypeIds": ["1"],  # Soccer
                     "marketTypeCodes": ["OVER_UNDER_25"]
                 },
-                "maxResults": 150,
+                "maxResults": 500,
                 "marketProjection": ["RUNNER_DESCRIPTION", "EVENT"]
             }
             url = f"{BETFAIR_API_URL}/listMarketCatalogue/"
@@ -179,46 +179,49 @@ class BetfairExchangeClient:
                 cat = resp.json()
                 if cat:
                     market_ids = [m["marketId"] for m in cat]
-                    # Query live prices in batch
+                    # Query live prices in batch (split into chunks of 40)
                     book_url = f"{BETFAIR_API_URL}/listMarketBook/"
-                    b_payload = {
-                        "marketIds": market_ids,
-                        "priceProjection": {"priceData": ["EX_BEST_OFFERS"]}
-                    }
-                    b_resp = requests.post(book_url, headers=self.get_headers(), json=b_payload, timeout=8)
+                    books = []
+                    for i in range(0, len(market_ids), 40):
+                        chunk = market_ids[i:i+40]
+                        b_payload = {
+                            "marketIds": chunk,
+                            "priceProjection": {"priceData": ["EX_BEST_OFFERS"]}
+                        }
+                        b_resp = requests.post(book_url, headers=self.get_headers(), json=b_payload, timeout=8)
+                        if b_resp.status_code == 200:
+                            books.extend(b_resp.json())
                     
-                    if b_resp.status_code == 200:
-                        books = b_resp.json()
-                        book_dict = {b["marketId"]: b for b in books}
-                        
-                        cache = {}
-                        for m in cat:
-                            m_id = m["marketId"]
-                            ev_name = m.get("event", {}).get("name", "")
-                            b_data = book_dict.get(m_id)
-                            if b_data and "runners" in b_data:
-                                r_list = b_data["runners"]
-                                runners_cat = m.get("runners", [])
-                                o25_price, u25_price = None, None
-                                for r in r_list:
-                                    s_id = r.get("selectionId")
-                                    r_name = next((rc.get("runnerName") for rc in runners_cat if rc.get("selectionId") == s_id), "")
-                                    avail = r.get("ex", {}).get("availableToBack", [])
-                                    best_p = avail[0]["price"] if avail else None
+                    book_dict = {b["marketId"]: b for b in books}
+                    
+                    cache = {}
+                    for m in cat:
+                        m_id = m["marketId"]
+                        ev_name = m.get("event", {}).get("name", "")
+                        b_data = book_dict.get(m_id)
+                        if b_data and "runners" in b_data:
+                            r_list = b_data["runners"]
+                            runners_cat = m.get("runners", [])
+                            o25_price, u25_price = None, None
+                            for r in r_list:
+                                s_id = r.get("selectionId")
+                                r_name = next((rc.get("runnerName") for rc in runners_cat if rc.get("selectionId") == s_id), "")
+                                avail = r.get("ex", {}).get("availableToBack", [])
+                                best_p = avail[0]["price"] if avail else r.get("lastPriceTraded")
+                                
+                                if "Over" in r_name or s_id == 47973:
+                                    o25_price = best_p
+                                elif "Under" in r_name or s_id == 47972:
+                                    u25_price = best_p
                                     
-                                    if "Over" in r_name:
-                                        o25_price = best_p
-                                    elif "Under" in r_name:
-                                        u25_price = best_p
-                                        
-                                if o25_price or u25_price:
-                                    cache[norm_str(ev_name)] = {
-                                        "over25_odds": o25_price,
-                                        "under25_odds": u25_price,
-                                        "source": "Betfair Exchange API (Live)"
-                                    }
-                        self.market_cache = cache
-                        return cache
+                            if o25_price or u25_price:
+                                cache[norm_str(ev_name)] = {
+                                    "over25_odds": o25_price,
+                                    "under25_odds": u25_price,
+                                    "source": "Betfair Exchange API (Live)"
+                                }
+                    self.market_cache = cache
+                    return cache
         except Exception as e:
             logger.warning(f"Error refreshing batch Betfair markets: {e}")
         return self.market_cache
@@ -233,9 +236,18 @@ class BetfairExchangeClient:
         nh = norm_str(home_team)
         na = norm_str(away_team)
 
-        # Fuzzy search in market cache
+        # 1. Exact or substring matching
         for ev_key, data in self.market_cache.items():
-            if nh[:4] in ev_key and na[:4] in ev_key:
+            if (nh in ev_key or nh[:4] in ev_key) and (na in ev_key or na[:4] in ev_key):
+                return data
+
+        # 2. Key word split matching
+        h_words = [w for w in nh.split() if len(w) > 3]
+        a_words = [w for w in na.split() if len(w) > 3]
+        for ev_key, data in self.market_cache.items():
+            h_match = any(w in ev_key for w in h_words) if h_words else nh[:3] in ev_key
+            a_match = any(w in ev_key for w in a_words) if a_words else na[:3] in ev_key
+            if h_match and a_match:
                 return data
 
         return {
