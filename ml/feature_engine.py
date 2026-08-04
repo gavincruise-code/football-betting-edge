@@ -256,7 +256,14 @@ def compute_market_features(match_row: pd.Series) -> Dict[str, float]:
 
     return res
 
-def compute_all_features_for_match(full_df: pd.DataFrame, match_idx: int) -> Dict[str, float]:
+def compute_all_features_for_match(
+    full_df: pd.DataFrame,
+    match_idx: int,
+    home_h_hist: pd.DataFrame = None,
+    home_all_hist: pd.DataFrame = None,
+    away_a_hist: pd.DataFrame = None,
+    away_all_hist: pd.DataFrame = None,
+) -> Dict[str, float]:
     """
     Computes all ~120+ features for match at index match_idx using ONLY data prior to match_idx.
     """
@@ -265,14 +272,12 @@ def compute_all_features_for_match(full_df: pd.DataFrame, match_idx: int) -> Dic
     home_team = match_row['HomeTeam']
     away_team = match_row['AwayTeam']
 
-    hist = full_df.iloc[:match_idx]
-
-    # Venue histories
-    home_h_hist = hist[hist['HomeTeam'] == home_team]
-    home_all_hist = hist[(hist['HomeTeam'] == home_team) | (hist['AwayTeam'] == home_team)]
-
-    away_a_hist = hist[hist['AwayTeam'] == away_team]
-    away_all_hist = hist[(hist['HomeTeam'] == away_team) | (hist['AwayTeam'] == away_team)]
+    if home_h_hist is None:
+        hist = full_df.iloc[:match_idx]
+        home_h_hist = hist[hist['HomeTeam'] == home_team]
+        home_all_hist = hist[(hist['HomeTeam'] == home_team) | (hist['AwayTeam'] == home_team)]
+        away_a_hist = hist[hist['AwayTeam'] == away_team]
+        away_all_hist = hist[(hist['HomeTeam'] == away_team) | (hist['AwayTeam'] == away_team)]
 
     feats = {}
 
@@ -317,37 +322,60 @@ def compute_all_features_for_match(full_df: pd.DataFrame, match_idx: int) -> Dic
 def compute_all_features(df: pd.DataFrame, min_history: int = MIN_HISTORY_MATCHES) -> pd.DataFrame:
     """
     Computes feature matrix for entire dataset chronologically.
+    Optimized with fast team index tracking.
     """
     df = df.sort_values('Date').reset_index(drop=True)
     all_feature_rows = []
 
+    # Map team -> list of prior match indices
+    team_all_idx = {}
+    team_home_idx = {}
+    team_away_idx = {}
+
     for i in range(len(df)):
-        hist = df.iloc[:i]
         home_team = df.iloc[i]['HomeTeam']
         away_team = df.iloc[i]['AwayTeam']
 
-        home_cnt = len(hist[(hist['HomeTeam'] == home_team) | (hist['AwayTeam'] == home_team)])
-        away_cnt = len(hist[(hist['HomeTeam'] == away_team) | (hist['AwayTeam'] == away_team)])
+        h_all = team_all_idx.get(home_team, [])
+        a_all = team_all_idx.get(away_team, [])
 
-        if home_cnt < min_history or away_cnt < min_history:
-            continue
+        if len(h_all) >= min_history and len(a_all) >= min_history:
+            h_h = team_home_idx.get(home_team, [])
+            a_a = team_away_idx.get(away_team, [])
 
-        row_feats = compute_all_features_for_match(df, i)
-        
-        # Meta columns
-        row_feats['Date'] = df.iloc[i]['Date']
-        row_feats['HomeTeam'] = home_team
-        row_feats['AwayTeam'] = away_team
-        row_feats['FTHG'] = df.iloc[i]['FTHG']
-        row_feats['FTAG'] = df.iloc[i]['FTAG']
-        row_feats['over25'] = bool((df.iloc[i]['FTHG'] + df.iloc[i]['FTAG']) > 2.5)
-        row_feats['over25_odds'] = df.iloc[i].get('over25_odds', np.nan)
-        row_feats['under25_odds'] = df.iloc[i].get('under25_odds', np.nan)
-        row_feats['draw_odds'] = df.iloc[i].get('draw_odds', np.nan)
-        if 'league' in df.columns:
-            row_feats['league'] = df.iloc[i]['league']
+            row_feats = compute_all_features_for_match(
+                df, i,
+                home_h_hist=df.iloc[h_h],
+                home_all_hist=df.iloc[h_all],
+                away_a_hist=df.iloc[a_a],
+                away_all_hist=df.iloc[a_all]
+            )
+            
+            # Meta columns
+            row_feats['Date'] = df.iloc[i]['Date']
+            row_feats['HomeTeam'] = home_team
+            row_feats['AwayTeam'] = away_team
+            row_feats['FTHG'] = df.iloc[i]['FTHG']
+            row_feats['FTAG'] = df.iloc[i]['FTAG']
+            row_feats['over25'] = bool((df.iloc[i]['FTHG'] + df.iloc[i]['FTAG']) > 2.5)
+            row_feats['over25_odds'] = df.iloc[i].get('over25_odds', np.nan)
+            row_feats['under25_odds'] = df.iloc[i].get('under25_odds', np.nan)
+            row_feats['draw_odds'] = df.iloc[i].get('draw_odds', np.nan)
+            if 'league' in df.columns:
+                row_feats['league'] = df.iloc[i]['league']
 
-        all_feature_rows.append(row_feats)
+            all_feature_rows.append(row_feats)
+
+        # Update team history indices after checking
+        if home_team not in team_all_idx: team_all_idx[home_team] = []
+        if away_team not in team_all_idx: team_all_idx[away_team] = []
+        if home_team not in team_home_idx: team_home_idx[home_team] = []
+        if away_team not in team_away_idx: team_away_idx[away_team] = []
+
+        team_all_idx[home_team].append(i)
+        team_all_idx[away_team].append(i)
+        team_home_idx[home_team].append(i)
+        team_away_idx[away_team].append(i)
 
     if not all_feature_rows:
         return pd.DataFrame()

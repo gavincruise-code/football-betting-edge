@@ -197,6 +197,8 @@ def build_master_dataset(
     if 'Date' in master.columns:
         master['Date'] = pd.to_datetime(master['Date'])
         master = master.sort_values('Date').reset_index(drop=True)
+        if 'season_year' not in master.columns:
+            master['season_year'] = master['Date'].dt.year
     return master
 
 
