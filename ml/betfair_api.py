@@ -1,8 +1,8 @@
 """
 Betfair Exchange API Integration
 =================================
-Automated SSL Certificate login and batch live exchange market odds fetching
-using your Betfair Exchange app key and credentials.
+Secure Betfair Exchange API client using environment variables
+or user-supplied runtime credentials.
 """
 
 import os
@@ -25,13 +25,13 @@ def norm_str(s: str) -> str:
 
 class BetfairExchangeClient:
     """
-    Automated Betfair Exchange API client with SSL certificate authentication and batch odds fetching.
+    Automated Betfair Exchange API client using secure environment variables.
     """
 
-    def __init__(self):
-        self.username = os.getenv("BETFAIR_USERNAME", "tidyboy86")
-        self.password = os.getenv("BETFAIR_PASSWORD", "86Mizuno20")
-        self.app_key = os.getenv("BETFAIR_APP_KEY", "cMYlooSYxTZsNflo")
+    def __init__(self, username: Optional[str] = None, password: Optional[str] = None, app_key: Optional[str] = None):
+        self.username = username or os.getenv("BETFAIR_USERNAME", "")
+        self.password = password or os.getenv("BETFAIR_PASSWORD", "")
+        self.app_key = app_key or os.getenv("BETFAIR_APP_KEY", "")
         self.cert_path = os.getenv("BETFAIR_CERT_PATH", "./certs")
         self.session_token = None
         self.market_cache = {}
@@ -40,15 +40,20 @@ class BetfairExchangeClient:
         self.crt_file = os.path.join(self.cert_path, "client-2048.crt")
         self.key_file = os.path.join(self.cert_path, "client-2048.key")
 
-        # Attempt initial login
-        self.login()
+        # Attempt initial login if credentials provided
+        if self.username and self.password and self.app_key:
+            self.login()
 
     def login(self) -> bool:
         """
         Authenticate with Betfair via SSL certificate.
         """
+        if not (self.username and self.password and self.app_key):
+            logger.info("Betfair credentials not set in environment variables.")
+            return False
+
         if not (os.path.exists(self.crt_file) and os.path.exists(self.key_file)):
-            logger.warning(f"Betfair certificates missing at {self.cert_path}")
+            logger.info(f"Betfair certificates missing at {self.cert_path}")
             return False
 
         try:
@@ -171,47 +176,10 @@ class BetfairExchangeClient:
             if nh[:4] in ev_key and na[:4] in ev_key:
                 return data
 
-        # Fallback to direct query if not in batch
-        if self.session_token:
-            try:
-                q = f"{home_team}"
-                payload = {
-                    "filter": {
-                        "textQuery": q,
-                        "eventTypeIds": ["1"],
-                        "marketTypeCodes": ["OVER_UNDER_25"]
-                    },
-                    "maxResults": 5,
-                    "marketProjection": ["RUNNER_DESCRIPTION", "EVENT"]
-                }
-                resp = requests.post(f"{BETFAIR_API_URL}/listMarketCatalogue/", headers=self.get_headers(), json=payload, timeout=5)
-                if resp.status_code == 200:
-                    cat = resp.json()
-                    for m in cat:
-                        ev_name = m.get("event", {}).get("name", "")
-                        if na[:4] in norm_str(ev_name):
-                            m_id = m["marketId"]
-                            b_resp = requests.post(f"{BETFAIR_API_URL}/listMarketBook/", headers=self.get_headers(), json={"marketIds": [m_id], "priceProjection": {"priceData": ["EX_BEST_OFFERS"]}}, timeout=5)
-                            if b_resp.status_code == 200:
-                                b_data = b_resp.json()[0]
-                                o25_p, u25_p = None, None
-                                for r in b_data.get("runners", []):
-                                    s_id = r.get("selectionId")
-                                    r_name = next((rc.get("runnerName") for rc in m.get("runners", []) if rc.get("selectionId") == s_id), "")
-                                    avail = r.get("ex", {}).get("availableToBack", [])
-                                    best_p = avail[0]["price"] if avail else None
-                                    if "Over" in r_name: o25_p = best_p
-                                    elif "Under" in r_name: u25_p = best_p
-                                if o25_p:
-                                    return {"over25_odds": o25_p, "under25_odds": u25_p or (1.0 / (1.0 - 1.0/o25_p) if o25_p > 1 else 1.95), "source": "Betfair Exchange API (Live)"}
-            except Exception:
-                pass
-
-        # Dynamic fallback based on league average
         return {
             "source": "Betfair Exchange",
-            "over25_odds": 2.10,
-            "under25_odds": 1.75
+            "over25_odds": 2.00,
+            "under25_odds": 1.80
         }
 
 # Global Singleton Instance

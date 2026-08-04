@@ -4,5 +4,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .env
+certs/
+*.crt
+*.key
 *.log
 .DS_Store
