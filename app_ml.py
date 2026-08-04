@@ -300,6 +300,8 @@ def render_ml_predictions_tab():
                         fix_df = ml.data_ingestion.fetch_upcoming_fixtures()
 
                         # Refresh Betfair Exchange live market odds batch
+                        import ml.betfair_api
+                        importlib.reload(ml.betfair_api)
                         from ml.betfair_api import get_betfair_client
                         bf_client = get_betfair_client()
                         bf_client.fetch_all_live_markets()
@@ -384,8 +386,10 @@ def render_ml_predictions_tab():
                     # Query live Betfair Exchange odds for fixture
                     try:
                         bf_odds = bf_client.fetch_market_odds(h_team, a_team)
-                        init_o25 = float(bf_odds.get('over25_odds')) if pd.notna(bf_odds.get('over25_odds')) and float(bf_odds.get('over25_odds')) > 1.0 else (float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00)
-                        init_u25 = float(bf_odds.get('under25_odds')) if pd.notna(bf_odds.get('under25_odds')) and float(bf_odds.get('under25_odds')) > 1.0 else (float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80)
+                        bf_raw_o = bf_odds.get('over25_odds')
+                        bf_raw_u = bf_odds.get('under25_odds')
+                        init_o25 = float(bf_raw_o) if pd.notna(bf_raw_o) and float(bf_raw_o) > 1.0 else (float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00)
+                        init_u25 = float(bf_raw_u) if pd.notna(bf_raw_u) and float(bf_raw_u) > 1.0 else (float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80)
                     except Exception:
                         init_o25 = float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00
                         init_u25 = float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80

@@ -39,6 +39,7 @@ class BetfairExchangeClient:
         self.cert_path = os.getenv("BETFAIR_CERT_PATH", "./certs")
         self.session_token = None
         self.last_status = "Not authenticated"
+        self.last_error = ""
         self.market_cache = {}
 
         # Resolve cert file paths
@@ -157,10 +158,12 @@ class BetfairExchangeClient:
         """
         Fetch batch of live Over/Under 2.5 markets from Betfair Exchange.
         """
+        self.last_error = ""
         if not self.session_token:
             self.login()
 
         if not self.session_token:
+            self.last_error = f"No session token (login status: {self.last_status})"
             return {}
 
         try:
@@ -173,56 +176,94 @@ class BetfairExchangeClient:
                 "marketProjection": ["RUNNER_DESCRIPTION", "EVENT"]
             }
             url = f"{BETFAIR_API_URL}/listMarketCatalogue/"
-            resp = requests.post(url, headers=self.get_headers(), json=payload, timeout=8)
+            resp = requests.post(url, headers=self.get_headers(), json=payload, timeout=15)
             
-            if resp.status_code == 200:
-                cat = resp.json()
-                if cat:
-                    market_ids = [m["marketId"] for m in cat]
-                    # Query live prices in batch (split into chunks of 40)
-                    book_url = f"{BETFAIR_API_URL}/listMarketBook/"
-                    books = []
-                    for i in range(0, len(market_ids), 40):
-                        chunk = market_ids[i:i+40]
-                        b_payload = {
-                            "marketIds": chunk,
-                            "priceProjection": {"priceData": ["EX_BEST_OFFERS"]}
+            if resp.status_code != 200:
+                self.last_error = f"listMarketCatalogue HTTP {resp.status_code}: {resp.text[:200]}"
+                return self.market_cache
+            
+            cat = resp.json()
+            
+            # Check if Betfair returned an error object
+            if isinstance(cat, dict) and cat.get('faultcode'):
+                self.last_error = f"API fault: {cat.get('faultcode')} - {cat.get('faultstring', '')}"
+                # Re-login and retry once
+                self.session_token = None
+                self.login()
+                if self.session_token:
+                    resp = requests.post(url, headers=self.get_headers(), json=payload, timeout=15)
+                    if resp.status_code == 200:
+                        cat = resp.json()
+                        if isinstance(cat, dict) and cat.get('faultcode'):
+                            self.last_error = f"API fault after re-login: {cat.get('faultcode')}"
+                            return self.market_cache
+                    else:
+                        self.last_error = f"Retry HTTP {resp.status_code}"
+                        return self.market_cache
+                else:
+                    self.last_error = f"Re-login failed: {self.last_status}"
+                    return self.market_cache
+            
+            if not cat:
+                self.last_error = "listMarketCatalogue returned empty list"
+                return self.market_cache
+                
+            market_ids = [m["marketId"] for m in cat]
+            logger.info(f"Found {len(market_ids)} OVER_UNDER_25 markets")
+            
+            # Query live prices in batch (split into chunks of 40)
+            book_url = f"{BETFAIR_API_URL}/listMarketBook/"
+            books = []
+            for i in range(0, len(market_ids), 40):
+                chunk = market_ids[i:i+40]
+                b_payload = {
+                    "marketIds": chunk,
+                    "priceProjection": {"priceData": ["EX_BEST_OFFERS"]}
+                }
+                b_resp = requests.post(book_url, headers=self.get_headers(), json=b_payload, timeout=15)
+                if b_resp.status_code == 200:
+                    b_json = b_resp.json()
+                    if isinstance(b_json, list):
+                        books.extend(b_json)
+                    else:
+                        self.last_error = f"listMarketBook unexpected response: {str(b_json)[:200]}"
+                else:
+                    self.last_error = f"listMarketBook chunk HTTP {b_resp.status_code}: {b_resp.text[:200]}"
+            
+            book_dict = {b["marketId"]: b for b in books}
+            
+            cache = {}
+            for m in cat:
+                m_id = m["marketId"]
+                ev_name = m.get("event", {}).get("name", "")
+                b_data = book_dict.get(m_id)
+                if b_data and "runners" in b_data:
+                    r_list = b_data["runners"]
+                    runners_cat = m.get("runners", [])
+                    o25_price, u25_price = None, None
+                    for r in r_list:
+                        s_id = r.get("selectionId")
+                        r_name = next((rc.get("runnerName") for rc in runners_cat if rc.get("selectionId") == s_id), "")
+                        avail = r.get("ex", {}).get("availableToBack", [])
+                        best_p = avail[0]["price"] if avail else r.get("lastPriceTraded")
+                        
+                        if "Over" in r_name or s_id == 47973:
+                            o25_price = best_p
+                        elif "Under" in r_name or s_id == 47972:
+                            u25_price = best_p
+                            
+                    if o25_price or u25_price:
+                        cache[norm_str(ev_name)] = {
+                            "over25_odds": o25_price,
+                            "under25_odds": u25_price,
+                            "source": "Betfair Exchange API (Live)"
                         }
-                        b_resp = requests.post(book_url, headers=self.get_headers(), json=b_payload, timeout=8)
-                        if b_resp.status_code == 200:
-                            books.extend(b_resp.json())
-                    
-                    book_dict = {b["marketId"]: b for b in books}
-                    
-                    cache = {}
-                    for m in cat:
-                        m_id = m["marketId"]
-                        ev_name = m.get("event", {}).get("name", "")
-                        b_data = book_dict.get(m_id)
-                        if b_data and "runners" in b_data:
-                            r_list = b_data["runners"]
-                            runners_cat = m.get("runners", [])
-                            o25_price, u25_price = None, None
-                            for r in r_list:
-                                s_id = r.get("selectionId")
-                                r_name = next((rc.get("runnerName") for rc in runners_cat if rc.get("selectionId") == s_id), "")
-                                avail = r.get("ex", {}).get("availableToBack", [])
-                                best_p = avail[0]["price"] if avail else r.get("lastPriceTraded")
-                                
-                                if "Over" in r_name or s_id == 47973:
-                                    o25_price = best_p
-                                elif "Under" in r_name or s_id == 47972:
-                                    u25_price = best_p
-                                    
-                            if o25_price or u25_price:
-                                cache[norm_str(ev_name)] = {
-                                    "over25_odds": o25_price,
-                                    "under25_odds": u25_price,
-                                    "source": "Betfair Exchange API (Live)"
-                                }
-                    self.market_cache = cache
-                    return cache
+            self.market_cache = cache
+            self.last_error = "" if cache else "No markets with price data found"
+            logger.info(f"Cached {len(cache)} markets with live prices")
+            return cache
         except Exception as e:
+            self.last_error = f"Exception: {type(e).__name__}: {e}"
             logger.warning(f"Error refreshing batch Betfair markets: {e}")
         return self.market_cache
 
@@ -261,6 +302,9 @@ _betfair_client = None
 
 def get_betfair_client() -> BetfairExchangeClient:
     global _betfair_client
+    # Recreate if stale (old class without last_error attribute)
+    if _betfair_client is not None and not hasattr(_betfair_client, 'last_error'):
+        _betfair_client = None
     if _betfair_client is None:
         _betfair_client = BetfairExchangeClient()
     return _betfair_client
