@@ -369,6 +369,8 @@ def render_ml_predictions_tab():
                     try:
                         if bf_client.session_token:
                             st.success(f"🟢 Connected to Betfair Exchange API\nAccount: {bf_client.username}")
+                            if not bf_client.market_cache:
+                                bf_client.fetch_all_live_markets()
                         else:
                             st.warning(f"🟡 Betfair Status: {bf_client.last_status}")
                             if st.button("🔄 Retry Betfair Login"):
@@ -398,8 +400,17 @@ def render_ml_predictions_tab():
                         eo1, eo2 = st.columns(2)
                         match_key_o25 = f"o25_{norm_team(h_team)}_{norm_team(a_team)}"
                         match_key_u25 = f"u25_{norm_team(h_team)}_{norm_team(a_team)}"
-                        o25 = eo1.number_input(f"Betfair Over 2.5 Odds ({h_team})", value=init_o25, step=0.05, key=match_key_o25)
-                        u25 = eo2.number_input(f"Betfair Under 2.5 Odds ({a_team})", value=init_u25, step=0.05, key=match_key_u25)
+
+                        if match_key_o25 not in st.session_state or st.session_state.get(f"_bf_o25_{match_key_o25}") != init_o25:
+                            st.session_state[match_key_o25] = init_o25
+                            st.session_state[f"_bf_o25_{match_key_o25}"] = init_o25
+
+                        if match_key_u25 not in st.session_state or st.session_state.get(f"_bf_u25_{match_key_u25}") != init_u25:
+                            st.session_state[match_key_u25] = init_u25
+                            st.session_state[f"_bf_u25_{match_key_u25}"] = init_u25
+
+                        o25 = eo1.number_input(f"Betfair Over 2.5 Odds ({h_team})", step=0.05, key=match_key_o25)
+                        u25 = eo2.number_input(f"Betfair Under 2.5 Odds ({a_team})", step=0.05, key=match_key_u25)
 
                     # Dynamic Team Model Probability & Live Betfair Odds Computation
                     league_name = row.get('league', 'Unknown')
