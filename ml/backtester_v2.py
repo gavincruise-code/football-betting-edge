@@ -166,8 +166,8 @@ def walk_forward_backtest(
 
         # Compute DC predictions as feature before prepare_training_data
         if 'dc_prob' not in train_data.columns:
-            train_data['dc_prob'] = [predict_over25(dc_params, r['HomeTeam'], r['AwayTeam']) for _, r in train_data.iterrows()]
-            test_data['dc_prob'] = [predict_over25(dc_params, r['HomeTeam'], r['AwayTeam']) for _, r in test_data.iterrows()]
+            train_data['dc_prob'] = [predict_over25(dc_params, h, a) for h, a in zip(train_data['HomeTeam'], train_data['AwayTeam'])]
+            test_data['dc_prob'] = [predict_over25(dc_params, h, a) for h, a in zip(test_data['HomeTeam'], test_data['AwayTeam'])]
 
         # Train XGBoost model
         X_train, y_train, feat_cols = prepare_training_data(train_data)

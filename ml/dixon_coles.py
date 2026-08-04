@@ -183,14 +183,35 @@ def predict_score_probs(
     return matrix
 
 def predict_over25(params: Dict, home_team: str, away_team: str) -> float:
-    """Calculates P(Over 2.5 goals) from Dixon-Coles matrix."""
-    matrix = predict_score_probs(params, home_team, away_team)
-    prob = 0.0
-    for h in range(matrix.shape[0]):
-        for a in range(matrix.shape[1]):
-            if h + a >= 3:
-                prob += matrix[h, a]
-    return float(prob)
+    """Calculates P(Over 2.5 goals) from Dixon-Coles parameters in O(1) time."""
+    if not params or not params.get('converged', False):
+        return 0.50
+
+    home_adv = params['home_adv']
+    rho = params['rho']
+    att = params['attack']
+    deff = params['defense']
+
+    att_h = att.get(home_team, 0.0)
+    def_h = deff.get(home_team, 0.0)
+    att_a = att.get(away_team, 0.0)
+    def_a = deff.get(away_team, 0.0)
+
+    lam = math.exp(home_adv + att_h + def_a)
+    mu = math.exp(att_a + def_h)
+
+    e_neg_tot = math.exp(-(lam + mu))
+
+    # Low score probabilities with Dixon-Coles tau correction
+    p00 = tau(0, 0, lam, mu, rho) * e_neg_tot
+    p10 = tau(1, 0, lam, mu, rho) * lam * e_neg_tot
+    p01 = tau(0, 1, lam, mu, rho) * mu * e_neg_tot
+    p11 = tau(1, 1, lam, mu, rho) * lam * mu * e_neg_tot
+    p20 = (lam ** 2 / 2.0) * e_neg_tot
+    p02 = (mu ** 2 / 2.0) * e_neg_tot
+
+    p_under25 = p00 + p10 + p01 + p11 + p20 + p02
+    return max(0.05, min(0.95, 1.0 - p_under25))
 
 def predict_draw(params: Dict, home_team: str, away_team: str) -> float:
     """Calculates P(Draw) from Dixon-Coles matrix."""
