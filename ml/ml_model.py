@@ -69,6 +69,7 @@ def train_xgboost(
             'colsample_bytree': trial.suggest_float('colsample_bytree', *XGBOOST_PARAM_SPACE['colsample_bytree']),
             'reg_alpha': trial.suggest_float('reg_alpha', *XGBOOST_PARAM_SPACE['reg_alpha']),
             'reg_lambda': trial.suggest_float('reg_lambda', *XGBOOST_PARAM_SPACE['reg_lambda']),
+            'n_jobs': -1,
         }
         
         clf = xgb.XGBClassifier(**params)
@@ -83,12 +84,13 @@ def train_xgboost(
         return log_loss(y_val, preds)
 
     study = optuna.create_study(direction='minimize')
-    study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+    study.optimize(objective, n_trials=n_trials, show_progress_bar=False, n_jobs=-1)
 
     best_params = study.best_params
     best_params['objective'] = 'binary:logistic'
     best_params['eval_metric'] = 'logloss'
     best_params['random_state'] = 42
+    best_params['n_jobs'] = -1
 
     final_model = xgb.XGBClassifier(**best_params)
     final_model.fit(X_train, y_train)
@@ -111,6 +113,7 @@ def train_with_defaults(
 ) -> xgb.XGBClassifier:
     """
     Train XGBoost with default baseline parameters for fast iteration.
+    Utilizes all local CPU cores (n_jobs=-1).
     """
     model = xgb.XGBClassifier(
         max_depth=5,
@@ -119,7 +122,8 @@ def train_with_defaults(
         subsample=0.8,
         colsample_bytree=0.8,
         random_state=42,
-        eval_metric='logloss'
+        eval_metric='logloss',
+        n_jobs=-1
     )
     model.fit(X_train, y_train)
     return model
