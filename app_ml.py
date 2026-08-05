@@ -317,16 +317,18 @@ def render_ml_predictions_tab():
             fix_df = st.session_state.get('live_fixtures_df', pd.DataFrame())
 
             if not fix_df.empty:
-                f_col1, f_col2, f_col3, f_col4 = st.columns(4)
+                f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns([1.2, 1.2, 1.5, 1.2, 1])
                 with f_col1:
                     date_window = st.selectbox("📅 Date Window", ["Today & Tomorrow", "Next 3 Days", "Next 7 Days", "All Upcoming"], index=0)
                 with f_col2:
                     all_league_keys = ["All Leagues"] + sorted(list(set(list(UNDERSTAT_LEAGUES.keys()) + list(fix_df['league'].dropna().unique()))))
                     sel_league = st.selectbox("Filter League", all_league_keys)
                 with f_col3:
-                    edge_filter = st.slider("Min Edge %", 1, 15, 5, 1) / 100.0
+                    scanner_model = st.selectbox("🤖 Model Strategy", ["Dual Ensemble (Recommended)", "Dixon-Coles Only", "XGBoost ML Only"], index=0)
                 with f_col4:
-                    val_only = st.checkbox("Show +EV Opportunities Only", value=False)
+                    edge_filter = st.slider("Min Edge %", 1, 15, 5, 1) / 100.0
+                with f_col5:
+                    val_only = st.checkbox("Show +EV Only", value=False)
 
                 filtered_fix = fix_df.copy()
 
@@ -501,7 +503,7 @@ def render_ml_predictions_tab():
                     <div style="background: {card_bg}; padding: 15px; margin-bottom: 12px; border-radius: 8px; border: {card_border};">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <span style="color: #888; font-size: 0.85rem;">{row['league']} • {m_date} {m_time}</span>
+                                <span style="color: #888; font-size: 0.85rem;">{row['league']} • {m_date} {m_time} • Strategy: <b>{scanner_model}</b></span>
                                 <h4 style="margin: 4px 0;">{h_team} vs {a_team}</h4>
                                 <span style="color: #00d4aa; font-weight: 600; font-size: 0.95rem;">Recommended Bet: {best_market} Goals</span>
                             </div>
