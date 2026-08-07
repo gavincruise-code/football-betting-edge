@@ -317,11 +317,14 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
     try:
         import requests
         espn_slugs = {
-            'swe.1': 'Sweden', 'usa.1': 'USA (MLS)', 'eng.1': 'EPL', 'esp.1': 'La_Liga',
+            'chn.1': 'China', 'jpn.1': 'Japan', 'swe.1': 'Sweden', 'usa.1': 'USA (MLS)',
+            'bel.1': 'Belgium', 'ned.1': 'Netherlands', 'por.1': 'Liga Portugal',
+            'tur.1': 'Turkey', 'gre.1': 'Greece', 'eng.1': 'EPL', 'esp.1': 'La_Liga',
             'ger.1': 'Bundesliga', 'ita.1': 'Serie_A', 'fra.1': 'Ligue_1', 'arg.1': 'Argentina',
-            'bra.1': 'Brazil', 'mex.1': 'Mexico', 'jpn.1': 'Japan', 'nor.1': 'Norway',
+            'bra.1': 'Brazil', 'mex.1': 'Mexico', 'nor.1': 'Norway',
             'dnk.1': 'Denmark', 'fin.1': 'Finland', 'pol.1': 'Poland', 'aut.1': 'Austria',
-            'sco.1': 'Scottish Premiership', 'eng.2': 'Championship'
+            'sco.1': 'Scottish Premiership', 'eng.2': 'Championship', 'sui.1': 'Switzerland',
+            'rou.1': 'Romania'
         }
         live_api_rows = []
         for slug, lg_name in espn_slugs.items():
