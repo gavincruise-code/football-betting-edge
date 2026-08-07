@@ -183,10 +183,17 @@ def walk_forward_backtest(
 
         # Train baseline model
         xgb_model = train_with_defaults(X_tr, y_tr)
-        raw_cal_probs = xgb_model.predict_proba(X_cal)[:, 1]
+        raw_cal_probs = predict_proba(xgb_model, X_cal)
         calibrator = fit_calibrator(y_cal.values, raw_cal_probs)
         # Predict ML probabilities
         ml_probs = predict_proba(xgb_model, X_test, calibrator)
+
+        # Save latest trained model for live scanner predictions
+        try:
+            from ml.ml_model import save_model
+            save_model(xgb_model, "xgb_over25_latest", calibrator)
+        except Exception:
+            pass
 
         # Process each test match
         for m_i in range(len(test_data)):

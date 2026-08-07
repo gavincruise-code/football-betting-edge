@@ -520,7 +520,13 @@ def render_ml_predictions_tab():
                             sm = score_matrix(lam_h, lam_a)
                             p_dc = sum(sm[i][j] for i in range(7) for j in range(7) if i + j >= 3)
                             
-                            # Estimate XGBoost ML feature adjustment from goal momentum trend
+                            # Load trained XGBoost model from backtest if available
+                            try:
+                                from ml.ml_model import load_model
+                                loaded_xgb, loaded_cal = load_model("xgb_over25_latest")
+                            except Exception:
+                                loaded_xgb, loaded_cal = None, None
+
                             h_mom = float(np.nanmean(h_scored[-5:])) - float(np.nanmean(h_scored)) if len(h_scored) >= 5 else 0
                             a_mom = float(np.nanmean(a_scored[-5:])) - float(np.nanmean(a_scored)) if len(a_scored) >= 5 else 0
                             p_xgb = float(np.clip(p_dc + 0.08 * (h_mom + a_mom), 0.15, 0.85))
