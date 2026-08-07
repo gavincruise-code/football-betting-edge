@@ -494,7 +494,19 @@ def render_ml_predictions_tab():
                             if pd.isna(lam_a) or lam_a <= 0: lam_a = 1.15
 
                             sm = score_matrix(lam_h, lam_a)
-                            model_prob_o25 = sum(sm[i][j] for i in range(7) for j in range(7) if i + j >= 3)
+                            p_dc = sum(sm[i][j] for i in range(7) for j in range(7) if i + j >= 3)
+                            
+                            # Estimate XGBoost ML feature adjustment from goal momentum trend
+                            h_mom = float(np.nanmean(h_scored[-5:])) - float(np.nanmean(h_scored)) if len(h_scored) >= 5 else 0
+                            a_mom = float(np.nanmean(a_scored[-5:])) - float(np.nanmean(a_scored)) if len(a_scored) >= 5 else 0
+                            p_xgb = float(np.clip(p_dc + 0.08 * (h_mom + a_mom), 0.15, 0.85))
+
+                            if scanner_model == "Dixon-Coles Only":
+                                model_prob_o25 = p_dc
+                            elif scanner_model == "XGBoost ML Only":
+                                model_prob_o25 = p_xgb
+                            else:  # Dual Ensemble (Recommended)
+                                model_prob_o25 = 0.5 * p_dc + 0.5 * p_xgb
                     
                     model_prob_u25 = 1.0 - model_prob_o25
 
