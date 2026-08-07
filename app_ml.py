@@ -350,6 +350,24 @@ def render_ml_predictions_tab():
                 if sel_league != "All Leagues":
                     filtered_fix = filtered_fix[filtered_fix['league'] == sel_league]
 
+                # Placed Bets Tracker & CSV Export Expander
+                from ml.bet_tracker import get_placed_bets, record_bet, is_bet_recorded
+                placed_df = get_placed_bets()
+                
+                with st.expander(f"📋 Placed Bets Log ({len(placed_df)} Bets Recorded)", expanded=False):
+                    if not placed_df.empty:
+                        st.dataframe(placed_df, use_container_width=True)
+                        csv_data = placed_df.to_csv(index=False).encode('utf-8')
+                        st.download_button(
+                            label="📥 Download Placed Bets CSV",
+                            data=csv_data,
+                            file_name="placed_bets_log.csv",
+                            mime="text/csv",
+                            key="dl_placed_bets_csv"
+                        )
+                    else:
+                        st.info("No bets recorded yet. Click '📌 Record Bet' on any fixture card below to log a bet to CSV!")
+
                 st.divider()
 
                 # Process and display fixture opportunity cards
@@ -578,12 +596,35 @@ def render_ml_predictions_tab():
                     </div>
                     """, unsafe_allow_html=True)
 
-                    fc1, fc2, fc3, fc4, fc5 = st.columns(5)
+                    fc1, fc2, fc3, fc4, fc5, fc6 = st.columns([1, 1, 1, 1.1, 1.3, 1.2])
                     fc1.metric("Betfair Odds", f"{best_odds:.2f}" if pd.notna(best_odds) else "N/A")
                     fc2.metric("Implied Prob", f"{best_imp*100:.1f}%")
                     fc3.metric("Model Prob", f"{best_prob*100:.1f}%")
                     fc4.metric(f"Edge % ({best_market})", f"{best_edge*100:+.1f}%", delta=f"{best_edge*100:+.1f}%" if is_val else None)
-                    fc5.metric("Quarter-Kelly Stake", f"£{kelly_stake(best_prob, best_odds, 1000.0):.2f}" if pd.notna(best_odds) and best_odds > 1 else "£0.00")
+                    rec_k_stake = kelly_stake(best_prob, best_odds, 1000.0) if pd.notna(best_odds) and best_odds > 1 else 10.0
+                    fc5.metric("Quarter-Kelly Stake", f"£{rec_k_stake:.2f}")
+
+                    with fc6:
+                        already_logged = is_bet_recorded(h_team, a_team, best_market)
+                        if already_logged:
+                            st.success("📌 Bet Logged")
+                        else:
+                            if st.button("📌 Record Bet", key=f"rec_btn_{idx}"):
+                                record_bet(
+                                    date=m_date,
+                                    league=row.get('league', 'Unknown'),
+                                    home_team=h_team,
+                                    away_team=a_team,
+                                    market=best_market,
+                                    odds=best_odds if pd.notna(best_odds) else 2.00,
+                                    strategy=scanner_model,
+                                    model_prob=best_prob,
+                                    implied_prob=best_imp,
+                                    edge_pct=best_edge,
+                                    recommended_stake=rec_k_stake
+                                )
+                                st.toast(f"✅ Bet Recorded: {h_team} vs {a_team} ({best_market})")
+                                st.rerun()
 
                     st.write("")
 
