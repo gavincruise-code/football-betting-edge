@@ -11,10 +11,21 @@ import requests
 import unicodedata
 import pandas as pd
 from typing import Dict, Optional, Tuple, List
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    def load_dotenv(*args, **kwargs):
+        pass
 
-# Load environment variables from .env file
-load_dotenv()
+def _get_secret(key: str, default: str = "") -> str:
+    try:
+        import streamlit as st
+        if key in st.secrets:
+            return str(st.secrets[key])
+    except Exception:
+        pass
+    return os.getenv(key, default)
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +44,10 @@ class BetfairExchangeClient:
     """
 
     def __init__(self, username: Optional[str] = None, password: Optional[str] = None, app_key: Optional[str] = None):
-        self.username = username or os.getenv("BETFAIR_USERNAME", "")
-        self.password = password or os.getenv("BETFAIR_PASSWORD", "")
-        self.app_key = app_key or os.getenv("BETFAIR_APP_KEY", "")
-        self.cert_path = os.getenv("BETFAIR_CERT_PATH", "./certs")
+        self.username = username or _get_secret("BETFAIR_USERNAME", "")
+        self.password = password or _get_secret("BETFAIR_PASSWORD", "")
+        self.app_key = app_key or _get_secret("BETFAIR_APP_KEY", "")
+        self.cert_path = _get_secret("BETFAIR_CERT_PATH", "./certs")
         self.session_token = None
         self.last_status = "Not authenticated"
         self.last_error = ""
@@ -83,9 +94,9 @@ class BetfairExchangeClient:
             self.set_credentials(password=password)
         else:
             load_dotenv(override=True)
-            self.username = os.getenv("BETFAIR_USERNAME", self.username)
-            self.password = os.getenv("BETFAIR_PASSWORD", self.password)
-            self.app_key = os.getenv("BETFAIR_APP_KEY", self.app_key)
+            self.username = _get_secret("BETFAIR_USERNAME", self.username)
+            self.password = _get_secret("BETFAIR_PASSWORD", self.password)
+            self.app_key = _get_secret("BETFAIR_APP_KEY", self.app_key)
 
         if not (self.username and self.password and self.app_key):
             self.last_status = "Missing credentials in .env file"
