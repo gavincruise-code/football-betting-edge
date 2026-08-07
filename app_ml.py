@@ -427,9 +427,19 @@ def render_ml_predictions_tab():
                         try:
                             from data_utils import download_league_data
                             code_reverse = {
-                                'EPL': 'E0', 'Championship': 'E1', 'La_Liga': 'SP1', 'Bundesliga': 'D1',
-                                'Serie_A': 'I1', 'Ligue_1': 'F1', 'Scottish Premiership': 'SC0',
-                                'USA (MLS)': 'USA', 'Argentina': 'ARG', 'Brazil': 'BRA', 'Mexico': 'MEX',
+                                'EPL': 'E0', 'Premier League': 'E0', 'Championship': 'E1', 'League 1': 'E2', 'League 2': 'E3',
+                                'La_Liga': 'SP1', 'La Liga': 'SP1', 'Segunda Division': 'SP2',
+                                'Bundesliga': 'D1', 'Bundesliga 2': 'D2',
+                                'Serie_A': 'I1', 'Serie A': 'I1', 'Serie B': 'I2',
+                                'Ligue_1': 'F1', 'Ligue 1': 'F1', 'Ligue 2': 'F2',
+                                'Scottish Premiership': 'SC0', 'Scottish Championship': 'SC1',
+                                'Netherlands': 'N1', 'Eredivisie': 'N1',
+                                'Belgium': 'B1', 'Pro League': 'B1', 'Jupiler Pro League': 'B1',
+                                'Portugal': 'P1', 'Liga Portugal': 'P1',
+                                'Turkey': 'T1', 'Super Lig': 'T1',
+                                'Greece': 'G1', 'Super League': 'G1',
+                                'USA (MLS)': 'USA', 'USA': 'USA',
+                                'Argentina': 'ARG', 'Brazil': 'BRA', 'Mexico': 'MEX',
                                 'Japan': 'JPN', 'China': 'CHN', 'Sweden': 'SWE', 'Norway': 'NOR',
                                 'Denmark': 'DNK', 'Finland': 'FIN', 'Poland': 'POL', 'Romania': 'ROU',
                                 'Switzerland': 'SWZ', 'Austria': 'AUT'

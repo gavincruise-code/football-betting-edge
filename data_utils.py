@@ -52,14 +52,25 @@ def download_league_data(league_code: str, season_code: str = "") -> pd.DataFram
     """Download CSV from football-data.co.uk. Handles both European seasonal and Global extra league CSVs."""
     if league_code in GLOBAL_LEAGUE_CODES:
         url = f"https://www.football-data.co.uk/new/{league_code}.csv"
+        try:
+            df = pd.read_csv(url)
+            return normalize_columns(df)
+        except Exception as e:
+            raise ValueError(f"Failed to download or parse {url}: {e}")
     else:
-        url = f"https://www.football-data.co.uk/mmz4281/{season_code}/{league_code}.csv"
-    
-    try:
-        df = pd.read_csv(url)
-        return normalize_columns(df)
-    except Exception as e:
-        raise ValueError(f"Failed to download or parse {url}: {e}")
+        s_codes = [season_code] if season_code else ['2425', '2526', '2324']
+        dfs = []
+        for sc in s_codes:
+            url = f"https://www.football-data.co.uk/mmz4281/{sc}/{league_code}.csv"
+            try:
+                d = pd.read_csv(url)
+                dfs.append(normalize_columns(d))
+            except Exception:
+                pass
+        if dfs:
+            return pd.concat(dfs, ignore_index=True)
+        else:
+            raise ValueError(f"Failed to download or parse European league CSV for {league_code}")
 
 def load_csv(file_or_path) -> pd.DataFrame:
     """Parse uploaded CSV with flexible date parsing and column normalization."""
