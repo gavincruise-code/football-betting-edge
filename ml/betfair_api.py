@@ -19,13 +19,16 @@ except ImportError:
         pass
 
 def _get_secret(key: str, default: str = "") -> str:
+    val = os.getenv(key)
+    if val:
+        return str(val)
     try:
         import streamlit as st
-        if key in st.secrets:
+        if hasattr(st, "secrets") and key in st.secrets:
             return str(st.secrets[key])
     except Exception:
         pass
-    return os.getenv(key, default)
+    return default
 
 logger = logging.getLogger(__name__)
 

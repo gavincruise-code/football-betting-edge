@@ -367,18 +367,21 @@ def render_ml_predictions_tab():
                     st.subheader("🟡 Betfair Exchange API")
                     try:
                         if bf_client.session_token:
-                            st.success(f"🟢 Connected to Betfair Exchange API\nAccount: {bf_client.username}")
+                            st.success(f"🟢 Connected to Betfair API\nUser: {bf_client.username}")
                             if not bf_client.market_cache:
                                 bf_client.fetch_all_live_markets()
                         else:
-                            if "403" in str(bf_client.last_status):
-                                st.info("ℹ️ **Cloud Geo-Restriction (HTTP 403)**\nStreamlit Cloud runs on US servers. Betfair API blocks US IPs. Using **Live Market Odds Feed** automatically.")
-                            else:
-                                st.warning(f"🟡 Betfair Status: {bf_client.last_status}")
-                            if st.button("🔄 Retry Betfair Login"):
-                                bf_client.login()
+                            st.warning(f"🟡 Betfair Status: {bf_client.last_status}")
+                            with st.expander("🔑 Live Betfair Login & Credentials", expanded=False):
+                                u_in = st.text_input("Betfair Username", value=bf_client.username, key="bf_u")
+                                p_in = st.text_input("Betfair Password", value=bf_client.password, type="password", key="bf_p")
+                                k_in = st.text_input("Betfair App Key", value=bf_client.app_key, key="bf_k")
+                                if st.button("🔓 Connect Betfair API"):
+                                    bf_client.set_credentials(username=u_in, password=p_in, app_key=k_in)
+                                    bf_client.login()
+                                    st.rerun()
                     except Exception as e:
-                        st.info("🟡 Using Betfair Exchange Live Odds Mode")
+                        st.info("🟡 Using Betfair Live Odds Market Mode")
 
                 for idx, row in filtered_fix.iterrows():
                     h_team = row['HomeTeam']
