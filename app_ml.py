@@ -443,11 +443,30 @@ def render_ml_predictions_tab():
                     model_prob_o25 = 0.55
 
                     if lg_df is not None and not lg_df.empty:
-                        nh = norm_team(h_team)
-                        na = norm_team(a_team)
+                        import difflib
+                        def match_team_exact(target_name, team_list):
+                            target_norm = norm_team(target_name)
+                            for t in team_list:
+                                if norm_team(t) == target_norm:
+                                    return t
+                            matches = difflib.get_close_matches(target_norm, [norm_team(t) for t in team_list], n=1, cutoff=0.4)
+                            if matches:
+                                matched_norm = matches[0]
+                                for t in team_list:
+                                    if norm_team(t) == matched_norm:
+                                        return t
+                            return target_name
 
-                        h_matches = lg_df[(lg_df['HomeTeam'].apply(norm_team).str.contains(nh[:4])) | (lg_df['AwayTeam'].apply(norm_team).str.contains(nh[:4]))] if 'HomeTeam' in lg_df.columns else pd.DataFrame()
-                        a_matches = lg_df[(lg_df['HomeTeam'].apply(norm_team).str.contains(na[:4])) | (lg_df['AwayTeam'].apply(norm_team).str.contains(na[:4]))] if 'AwayTeam' in lg_df.columns else pd.DataFrame()
+                        if 'HomeTeam' in lg_df.columns:
+                            all_lg_teams = list(set(lg_df['HomeTeam'].dropna().unique()).union(set(lg_df['AwayTeam'].dropna().unique())))
+                            matched_h = match_team_exact(h_team, all_lg_teams)
+                            matched_a = match_team_exact(a_team, all_lg_teams)
+
+                            h_matches = lg_df[(lg_df['HomeTeam'] == matched_h) | (lg_df['AwayTeam'] == matched_h)]
+                            a_matches = lg_df[(lg_df['HomeTeam'] == matched_a) | (lg_df['AwayTeam'] == matched_a)]
+                        else:
+                            h_matches = pd.DataFrame()
+                            a_matches = pd.DataFrame()
 
                         if not h_matches.empty and not a_matches.empty:
                             lam_h = h_matches['FTHG'].dropna().tail(10).mean() if 'FTHG' in h_matches.columns else 1.4
