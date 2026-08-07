@@ -469,10 +469,19 @@ def render_ml_predictions_tab():
                             a_matches = pd.DataFrame()
 
                         if not h_matches.empty and not a_matches.empty:
-                            lam_h = h_matches['FTHG'].dropna().tail(10).mean() if 'FTHG' in h_matches.columns else 1.4
-                            lam_a = a_matches['FTAG'].dropna().tail(10).mean() if 'FTAG' in a_matches.columns else 1.1
-                            if pd.isna(lam_h) or lam_h <= 0: lam_h = 1.4
-                            if pd.isna(lam_a) or lam_a <= 0: lam_a = 1.1
+                            h_recent = h_matches.tail(10)
+                            a_recent = a_matches.tail(10)
+
+                            h_scored = np.where(h_recent['HomeTeam'] == matched_h, h_recent['FTHG'], h_recent['FTAG'])
+                            h_conceded = np.where(h_recent['HomeTeam'] == matched_h, h_recent['FTAG'], h_recent['FTHG'])
+                            a_scored = np.where(a_recent['AwayTeam'] == matched_a, a_recent['FTAG'], a_recent['FTHG'])
+                            a_conceded = np.where(a_recent['AwayTeam'] == matched_a, a_recent['FTHG'], a_recent['FTAG'])
+
+                            lam_h = (float(np.nanmean(h_scored)) + float(np.nanmean(a_conceded))) / 2.0
+                            lam_a = (float(np.nanmean(a_scored)) + float(np.nanmean(h_conceded))) / 2.0
+
+                            if pd.isna(lam_h) or lam_h <= 0: lam_h = 1.35
+                            if pd.isna(lam_a) or lam_a <= 0: lam_a = 1.15
 
                             sm = score_matrix(lam_h, lam_a)
                             model_prob_o25 = sum(sm[i][j] for i in range(7) for j in range(7) if i + j >= 3)
