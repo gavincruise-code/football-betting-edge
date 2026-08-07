@@ -37,8 +37,11 @@ BETFAIR_API_URL = "https://api.betfair.com/exchange/betting/rest/v1.0"
 
 def norm_str(s: str) -> str:
     if not s: return ""
-    n = ''.join(c for c in unicodedata.normalize('NFD', str(s)) if unicodedata.category(c) != 'Mn')
-    return n.replace('IFK ', '').replace('FC ', '').replace('SK ', '').replace('AC ', '').replace('CD ', '').strip().lower()
+    s = str(s).lower()
+    s = s.replace('ø', 'o').replace('æ', 'ae').replace('å', 'a').replace('ß', 'ss')
+    s = s.replace('ü', 'u').replace('ö', 'o').replace('ä', 'a').replace('é', 'e').replace('è', 'e').replace('à', 'a').replace('ç', 'c').replace('ñ', 'n')
+    n = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+    return n.replace('ifk ', '').replace('fc ', '').replace('sk ', '').replace('ac ', '').replace('cd ', '').strip()
 
 
 class BetfairExchangeClient:

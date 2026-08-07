@@ -358,8 +358,11 @@ def render_ml_predictions_tab():
                 import unicodedata
                 def norm_team(name):
                     if not name: return ""
-                    n = ''.join(c for c in unicodedata.normalize('NFD', str(name)) if unicodedata.category(c) != 'Mn')
-                    return n.replace('IFK ', '').replace('FC ', '').replace('SK ', '').strip().lower()
+                    s = str(name).lower()
+                    s = s.replace('ø', 'o').replace('æ', 'ae').replace('å', 'a').replace('ß', 'ss')
+                    s = s.replace('ü', 'u').replace('ö', 'o').replace('ä', 'a').replace('é', 'e').replace('è', 'e').replace('à', 'a').replace('ç', 'c').replace('ñ', 'n')
+                    n = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+                    return n.replace('ifk ', '').replace('fc ', '').replace('sk ', '').replace('ac ', '').replace('cd ', '').strip()
 
                 # Betfair Exchange API Client Initialization
                 from ml.betfair_api import get_betfair_client
