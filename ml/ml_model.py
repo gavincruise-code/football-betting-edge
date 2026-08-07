@@ -125,8 +125,7 @@ def train_with_defaults(
         eval_metric='logloss',
         n_jobs=-1
     )
-    # Sanitize feature column names for XGBoost compatibility
-    clean_cols = [str(col).replace('[', '').replace(']', '').replace('<', '').replace('>', '') for col in X_train.columns]
+    clean_cols = [str(col).replace('[', '').replace(']', '').replace('>', '_over_').replace('<', '_under_') for col in X_train.columns]
     X_train_clean = X_train.copy()
     X_train_clean.columns = clean_cols
     model.fit(X_train_clean, y_train)
@@ -140,7 +139,7 @@ def predict_proba(
     """
     Returns probability of Over 2.5 goals, optionally calibrated and clipped.
     """
-    clean_cols = [str(col).replace('[', '').replace(']', '').replace('<', '').replace('>', '') for col in X.columns]
+    clean_cols = [str(col).replace('[', '').replace(']', '').replace('>', '_over_').replace('<', '_under_') for col in X.columns]
     X_clean = X.copy()
     X_clean.columns = clean_cols
     raw_probs = model.predict_proba(X_clean)[:, 1]
