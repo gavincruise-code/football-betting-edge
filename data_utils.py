@@ -68,7 +68,11 @@ def download_league_data(league_code: str, season_code: str = "") -> pd.DataFram
             except Exception:
                 pass
         if dfs:
-            return pd.concat(dfs, ignore_index=True)
+            combined = pd.concat(dfs, ignore_index=True)
+            if 'Date' in combined.columns:
+                combined['Date'] = pd.to_datetime(combined['Date'], errors='coerce')
+                combined = combined.dropna(subset=['Date']).sort_values('Date').reset_index(drop=True)
+            return combined
         else:
             raise ValueError(f"Failed to download or parse European league CSV for {league_code}")
 
