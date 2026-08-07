@@ -209,27 +209,34 @@ def walk_forward_backtest(
             dc_p = float(X_test.iloc[m_i]['dc_prob']) if 'dc_prob' in X_test.columns else 0.5
             ml_p = float(ml_probs[m_i])
 
-            if strategy == 'dc_only':
+            if strategy == 'random':
+                # True Random Control Group: 50% random chance to bet on match without edge filtering
+                should_bet = (np.random.rand() < 0.5)
+                pred_prob = 0.50
+                edge = 0.0
+            elif strategy == 'dc_only':
                 pred_prob = dc_p
+                edge = pred_prob - imp_prob
+                should_bet = (edge > edge_margin and MIN_MODEL_PROBABILITY <= pred_prob <= MAX_MODEL_PROBABILITY)
             elif strategy == 'ml_only':
                 pred_prob = ml_p
-            elif strategy == 'random':
-                pred_prob = float(np.random.uniform(0.3, 0.7))
+                edge = pred_prob - imp_prob
+                should_bet = (edge > edge_margin and MIN_MODEL_PROBABILITY <= pred_prob <= MAX_MODEL_PROBABILITY)
             else:  # 'dual'
                 pred_prob = ml_p
-
-            edge = pred_prob - imp_prob
+                edge = pred_prob - imp_prob
+                should_bet = (edge > edge_margin and MIN_MODEL_PROBABILITY <= pred_prob <= MAX_MODEL_PROBABILITY)
 
             all_y_true.append(1 if is_o25 else 0)
             all_y_prob.append(pred_prob)
 
-            if edge > edge_margin and MIN_MODEL_PROBABILITY <= pred_prob <= MAX_MODEL_PROBABILITY:
+            if should_bet:
                 # Place bet
                 won = is_o25
                 res_str = 'WIN' if won else 'LOSS'
                 pl_flat = (stake * odds - stake) if won else -stake
 
-                k_stake = kelly_stake(pred_prob, odds, bankroll_kelly, kelly_fraction, KELLY_MAX_PCT)
+                k_stake = stake if strategy == 'random' else kelly_stake(pred_prob, odds, bankroll_kelly, kelly_fraction, KELLY_MAX_PCT)
                 pl_kelly = (k_stake * odds - k_stake) if won else -k_stake
 
                 bankroll_flat += pl_flat
