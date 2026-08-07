@@ -319,7 +319,7 @@ def render_ml_predictions_tab():
             if not fix_df.empty:
                 f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns([1.2, 1.2, 1.5, 1.2, 1])
                 with f_col1:
-                    date_window = st.selectbox("📅 Date Window", ["Today & Tomorrow", "Next 3 Days", "Next 7 Days", "All Upcoming"], index=0)
+                    date_window = st.selectbox("📅 Date Window", ["Today Only", "Today & Tomorrow", "Next 3 Days", "Next 7 Days", "All Upcoming"], index=0)
                 with f_col2:
                     all_league_keys = ["All Leagues"] + sorted(list(set(list(UNDERSTAT_LEAGUES.keys()) + list(fix_df['league'].dropna().unique()))))
                     sel_league = st.selectbox("Filter League", all_league_keys)
@@ -334,8 +334,11 @@ def render_ml_predictions_tab():
 
                 # Filter by Date Window
                 today_dt = pd.Timestamp.now().normalize()
-                if date_window == "Today & Tomorrow":
-                    max_dt = today_dt + pd.Timedelta(days=1, hours=23, minutes=59)
+                if date_window == "Today Only":
+                    max_dt = today_dt + pd.Timedelta(hours=23, minutes=59, seconds=59)
+                    filtered_fix = filtered_fix[(filtered_fix['Date'] >= today_dt) & (filtered_fix['Date'] <= max_dt)]
+                elif date_window == "Today & Tomorrow":
+                    max_dt = today_dt + pd.Timedelta(days=1, hours=23, minutes=59, seconds=59)
                     filtered_fix = filtered_fix[filtered_fix['Date'] <= max_dt]
                 elif date_window == "Next 3 Days":
                     max_dt = today_dt + pd.Timedelta(days=3)
