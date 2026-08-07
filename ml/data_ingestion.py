@@ -362,7 +362,11 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
         return pd.DataFrame()
 
     res = pd.concat(all_upcoming, ignore_index=True)
+    if 'HomeTeam' in res.columns and 'AwayTeam' in res.columns:
+        res['h_key'] = res['HomeTeam'].apply(lambda x: ''.join(c for c in str(x) if c.isalnum()).lower()[:5] if pd.notnull(x) else '')
+        res['a_key'] = res['AwayTeam'].apply(lambda x: ''.join(c for c in str(x) if c.isalnum()).lower()[:5] if pd.notnull(x) else '')
+        res = res.drop_duplicates(subset=['h_key', 'a_key'], keep='first').drop(columns=['h_key', 'a_key'])
+    
     if 'Date' in res.columns:
-        res = res.drop_duplicates(subset=['league', 'HomeTeam', 'AwayTeam'], keep='first')
         res = res.sort_values('Date').reset_index(drop=True)
     return res
