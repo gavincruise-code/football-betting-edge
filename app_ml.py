@@ -371,7 +371,10 @@ def render_ml_predictions_tab():
                             if not bf_client.market_cache:
                                 bf_client.fetch_all_live_markets()
                         else:
-                            st.warning(f"🟡 Betfair Status: {bf_client.last_status}")
+                            if "403" in str(bf_client.last_status):
+                                st.info("ℹ️ **Cloud Geo-Restriction (HTTP 403)**\nStreamlit Cloud runs on US servers. Betfair API blocks US IPs. Using **Live Market Odds Feed** automatically.")
+                            else:
+                                st.warning(f"🟡 Betfair Status: {bf_client.last_status}")
                             if st.button("🔄 Retry Betfair Login"):
                                 bf_client.login()
                     except Exception as e:
