@@ -370,8 +370,8 @@ def render_ml_predictions_tab():
 
                 st.divider()
 
-                # Process and display fixture opportunity cards
-                opportunities_found = 0
+                # Evaluate all fixtures first for sorting
+                evaluated_fixtures = []
 
                 import unicodedata
                 def norm_team(name):
@@ -381,6 +381,17 @@ def render_ml_predictions_tab():
                     s = s.replace('ü', 'u').replace('ö', 'o').replace('ä', 'a').replace('é', 'e').replace('è', 'e').replace('à', 'a').replace('ç', 'c').replace('ñ', 'n')
                     n = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
                     return n.replace('ifk ', '').replace('fc ', '').replace('sk ', '').replace('ac ', '').replace('cd ', '').strip()
+
+                def parse_sort_dt(r):
+                    d = r['Date'] if pd.notnull(r['Date']) else pd.Timestamp.now()
+                    t_str = str(r.get('Time', '00:00')).strip()
+                    try:
+                        if ':' in t_str:
+                            parts = t_str.split(':')
+                            return d.replace(hour=int(parts[0]), minute=int(parts[1]))
+                    except Exception:
+                        pass
+                    return d
 
                 # Betfair Exchange API Client Initialization
                 from ml.betfair_api import get_betfair_client
@@ -412,10 +423,10 @@ def render_ml_predictions_tab():
                     a_team = row['AwayTeam']
                     m_date = row['Date'].strftime('%Y-%m-%d') if pd.notnull(row['Date']) else 'Upcoming'
                     m_time = row.get('Time', '')
+                    sort_dt = parse_sort_dt(row)
                     raw_o25 = row.get('over25_odds', np.nan)
                     raw_u25 = row.get('under25_odds', np.nan)
 
-                    # Query live Betfair Exchange odds for fixture
                     try:
                         bf_odds = bf_client.fetch_market_odds(h_team, a_team)
                         bf_raw_o = bf_odds.get('over25_odds')
@@ -426,21 +437,9 @@ def render_ml_predictions_tab():
                         init_o25 = float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00
                         init_u25 = float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80
 
-                    # Use live Betfair odds directly for calculations
                     o25 = init_o25
                     u25 = init_u25
 
-                    # Optional manual override via expander
-                    with st.expander(f"⚙️ Override Odds: {h_team} vs {a_team} (Live: O2.5 {init_o25:.2f} / U2.5 {init_u25:.2f})", expanded=False):
-                        eo1, eo2 = st.columns(2)
-                        manual_o25 = eo1.number_input(f"Over 2.5 Odds", value=init_o25, step=0.05, key=f"mo25_{idx}")
-                        manual_u25 = eo2.number_input(f"Under 2.5 Odds", value=init_u25, step=0.05, key=f"mu25_{idx}")
-                        if manual_o25 != init_o25:
-                            o25 = manual_o25
-                        if manual_u25 != init_u25:
-                            u25 = manual_u25
-
-                    # Dynamic Team Model Probability & Live Betfair Odds Computation
                     league_name = row.get('league', 'Unknown')
                     
                     if 'league_history_cache' not in st.session_state:
@@ -520,13 +519,6 @@ def render_ml_predictions_tab():
                             sm = score_matrix(lam_h, lam_a)
                             p_dc = sum(sm[i][j] for i in range(7) for j in range(7) if i + j >= 3)
                             
-                            # Load trained XGBoost model from backtest if available
-                            try:
-                                from ml.ml_model import load_model
-                                loaded_xgb, loaded_cal = load_model("xgb_over25_latest")
-                            except Exception:
-                                loaded_xgb, loaded_cal = None, None
-
                             h_mom = float(np.nanmean(h_scored[-5:])) - float(np.nanmean(h_scored)) if len(h_scored) >= 5 else 0
                             a_mom = float(np.nanmean(a_scored[-5:])) - float(np.nanmean(a_scored)) if len(a_scored) >= 5 else 0
                             p_xgb = float(np.clip(p_dc + 0.08 * (h_mom + a_mom), 0.15, 0.85))
@@ -575,13 +567,59 @@ def render_ml_predictions_tab():
                         best_prob = model_prob_o25 if edge_o25 >= edge_u25 else model_prob_u25
                         best_imp = imp_o25 if edge_o25 >= edge_u25 else imp_u25
 
+                    rec_k_stake = kelly_stake(best_prob, best_odds, 1000.0) if pd.notna(best_odds) and best_odds > 1 else 10.0
+
                     if val_only and not is_val:
                         continue
 
-                    if is_val:
-                        opportunities_found += 1
+                    evaluated_fixtures.append({
+                        'idx': idx,
+                        'row': row,
+                        'h_team': h_team,
+                        'a_team': a_team,
+                        'm_date': m_date,
+                        'm_time': m_time,
+                        'sort_dt': sort_dt,
+                        'o25': o25,
+                        'u25': u25,
+                        'model_prob_o25': model_prob_o25,
+                        'model_prob_u25': model_prob_u25,
+                        'edge_o25': edge_o25,
+                        'edge_u25': edge_u25,
+                        'val_o25': val_o25,
+                        'val_u25': val_u25,
+                        'is_val': is_val,
+                        'best_market': best_market,
+                        'best_edge': best_edge,
+                        'best_odds': best_odds,
+                        'best_prob': best_prob,
+                        'best_imp': best_imp,
+                        'rec_k_stake': rec_k_stake,
+                        'init_o25': init_o25,
+                        'init_u25': init_u25
+                    })
 
-                    # Fixture Card
+                # SORT FIXTURES: +EV matches FIRST (True < False -> not x['is_val']), then CHRONOLOGICAL by kickoff time (sort_dt)
+                evaluated_fixtures.sort(key=lambda x: (not x['is_val'], x['sort_dt'], -x['best_edge']))
+
+                opportunities_found = sum(1 for item in evaluated_fixtures if item['is_val'])
+
+                # Render Sorted Fixture Cards
+                for item in evaluated_fixtures:
+                    idx = item['idx']
+                    row = item['row']
+                    h_team = item['h_team']
+                    a_team = item['a_team']
+                    m_date = item['m_date']
+                    m_time = item['m_time']
+                    is_val = item['is_val']
+                    best_market = item['best_market']
+                    best_edge = item['best_edge']
+                    best_odds = item['best_odds']
+                    best_prob = item['best_prob']
+                    best_imp = item['best_imp']
+                    rec_k_stake = item['rec_k_stake']
+                    
                     card_border = "3px solid #00d4aa" if is_val else "1px solid rgba(255,255,255,0.1)"
                     card_bg = "rgba(0, 212, 170, 0.05)" if is_val else "rgba(255,255,255,0.02)"
 
@@ -589,7 +627,7 @@ def render_ml_predictions_tab():
                     <div style="background: {card_bg}; padding: 15px; margin-bottom: 12px; border-radius: 8px; border: {card_border};">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <span style="color: #888; font-size: 0.85rem;">{row['league']} • {m_date} {m_time} • Strategy: <b>{scanner_model}</b></span>
+                                <span style="color: #888; font-size: 0.85rem;">{row['league']} • <b>{m_date} {m_time}</b> • Strategy: <b>{scanner_model}</b></span>
                                 <h4 style="margin: 4px 0;">{h_team} vs {a_team}</h4>
                                 <span style="color: #00d4aa; font-weight: 600; font-size: 0.95rem;">Recommended Bet: {best_market} Goals</span>
                             </div>
@@ -607,7 +645,6 @@ def render_ml_predictions_tab():
                     fc2.metric("Implied Prob", f"{best_imp*100:.1f}%")
                     fc3.metric("Model Prob", f"{best_prob*100:.1f}%")
                     fc4.metric(f"Edge % ({best_market})", f"{best_edge*100:+.1f}%", delta=f"{best_edge*100:+.1f}%" if is_val else None)
-                    rec_k_stake = kelly_stake(best_prob, best_odds, 1000.0) if pd.notna(best_odds) and best_odds > 1 else 10.0
                     fc5.metric("Quarter-Kelly Stake", f"£{rec_k_stake:.2f}")
 
                     with fc6:
