@@ -12,8 +12,6 @@ import numpy as np
 import pandas as pd
 from typing import Dict, Tuple, Optional, List, Any
 import xgboost as xgb
-import optuna
-import shap
 
 from ml.config import (
     OPTUNA_N_TRIALS, XGBOOST_PARAM_SPACE, MODELS_DIR,
@@ -21,8 +19,6 @@ from ml.config import (
 )
 
 logger = logging.getLogger(__name__)
-# Suppress Optuna logging clutter
-optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 META_COLUMNS = ['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG', 'over25', 'over25_odds', 'under25_odds', 'draw_odds', 'league', 'season_year']
 
@@ -56,6 +52,9 @@ def train_xgboost(
     """
     Train XGBoost with Optuna hyperparameter tuning on validation log loss.
     """
+    import optuna
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
     def objective(trial):
         params = {
             'objective': 'binary:logistic',
@@ -162,6 +161,7 @@ def compute_shap_values(
     Calculates SHAP values for model predictions on X.
     """
     try:
+        import shap
         explainer = shap.TreeExplainer(model)
         shap_vals = explainer.shap_values(X)
         return shap_vals, list(X.columns)
