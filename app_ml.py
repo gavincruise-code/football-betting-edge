@@ -459,7 +459,7 @@ def render_ml_predictions_tab():
                                 'Netherlands': 'N1', 'Eredivisie': 'N1',
                                 'Belgium': 'B1', 'Pro League': 'B1', 'Jupiler Pro League': 'B1',
                                 'Portugal': 'P1', 'Liga Portugal': 'P1',
-                                'Turkey': 'T1', 'Super Lig': 'T1',
+                                'Turkey': 'T1', 'Super Lig': 'T1', '1. Lig': 'T2', 'Turkish 1. Lig': 'T2',
                                 'Greece': 'G1', 'Super League': 'G1',
                                 'USA (MLS)': 'USA', 'USA': 'USA',
                                 'Argentina': 'ARG', 'Brazil': 'BRA', 'Mexico': 'MEX',

@@ -13,7 +13,7 @@ LEAGUES: Dict[str, Dict[str, str]] = {
     "Netherlands": {"Eredivisie": "N1"},
     "Belgium": {"Pro League": "B1"},
     "Portugal": {"Liga Portugal": "P1"},
-    "Turkey": {"Super Lig": "T1"},
+    "Turkey": {"Super Lig": "T1", "1. Lig": "T2"},
     "Greece": {"Super League": "G1"},
     "USA": {"Major League Soccer (MLS)": "USA"},
     "Argentina": {"Primera Division": "ARG"},
@@ -75,6 +75,8 @@ def download_league_data(league_code: str, season_code: str = "") -> pd.DataFram
                 combined['Date'] = pd.to_datetime(combined['Date'], errors='coerce')
                 combined = combined.dropna(subset=['Date']).sort_values('Date').reset_index(drop=True)
             return combined
+        elif league_code == "T2":
+            return download_league_data("T1", season_code)
         else:
             raise ValueError(f"Failed to download or parse European league CSV for {league_code}")
 
