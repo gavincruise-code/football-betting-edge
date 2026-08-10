@@ -29,9 +29,11 @@ LEAGUES: Dict[str, Dict[str, str]] = {
     "Romania": {"Liga 1": "ROU"},
     "Switzerland": {"Super League": "SWZ"},
     "Austria": {"Bundesliga": "AUT"},
+    "Ireland": {"Premier Division": "IRL"},
+    "Russia": {"Premier League": "RUS"},
 }
 
-GLOBAL_LEAGUE_CODES = ["USA", "ARG", "BRA", "MEX", "JPN", "CHN", "SWE", "NOR", "DNK", "FIN", "POL", "ROU", "SWZ", "AUT"]
+GLOBAL_LEAGUE_CODES = ["USA", "ARG", "BRA", "MEX", "JPN", "CHN", "SWE", "NOR", "DNK", "FIN", "POL", "ROU", "SWZ", "AUT", "IRL", "RUS"]
 
 def get_available_seasons(start_year: int = 2005, end_year: int = 2025) -> List[str]:
     """Returns list of season strings like '2024-25', '2023-24', etc."""

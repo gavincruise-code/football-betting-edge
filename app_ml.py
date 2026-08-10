@@ -465,7 +465,7 @@ def render_ml_predictions_tab():
                                 'Argentina': 'ARG', 'Brazil': 'BRA', 'Mexico': 'MEX',
                                 'Japan': 'JPN', 'China': 'CHN', 'Sweden': 'SWE', 'Norway': 'NOR',
                                 'Denmark': 'DNK', 'Finland': 'FIN', 'Poland': 'POL', 'Romania': 'ROU',
-                                'Switzerland': 'SWZ', 'Austria': 'AUT'
+                                'Switzerland': 'SWZ', 'Austria': 'AUT', 'Ireland': 'IRL', 'Russia': 'RUS'
                             }
                             l_code = code_reverse.get(league_name, league_name)
                             lg_df = download_league_data(l_code)
