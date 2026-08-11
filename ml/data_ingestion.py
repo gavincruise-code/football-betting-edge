@@ -324,7 +324,8 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
             'bra.1': 'Brazil', 'mex.1': 'Mexico', 'nor.1': 'Norway',
             'dnk.1': 'Denmark', 'fin.1': 'Finland', 'pol.1': 'Poland', 'aut.1': 'Austria',
             'sco.1': 'Scottish Premiership', 'eng.2': 'Championship', 'sui.1': 'Switzerland',
-            'rou.1': 'Romania'
+            'rou.1': 'Romania', 'uefa.champions': 'UEFA Champions League', 'uefa.europa': 'UEFA Europa League',
+            'uefa.europa.conf': 'UEFA Conference League'
         }
         live_api_rows = []
         for slug, lg_name in espn_slugs.items():
@@ -357,6 +358,39 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
             all_upcoming.append(api_df)
     except Exception as e:
         logger.warning(f"Failed to fetch live API scoreboard: {e}")
+
+    # Source 4: Direct Betfair Exchange Live Markets Feed (captures all active live exchange matches worldwide including Champions League & Qualifiers)
+    try:
+        from ml.betfair_api import get_betfair_client
+        bf_client = get_betfair_client()
+        bf_mks = bf_client.fetch_all_live_markets()
+        bf_rows = []
+        for key_str, odds_info in bf_mks.items():
+            if ' v ' in key_str:
+                parts = key_str.split(' v ')
+                h_team = parts[0].strip().title()
+                a_team = parts[1].strip().title()
+                o_odds = odds_info.get('over25_odds', 1.85)
+                u_odds = odds_info.get('under25_odds', 1.95)
+                
+                # Assign league name based on match keywords or default to UEFA Champions League / Betfair Live
+                lg = 'UEFA Champions League' if any(w in key_str.lower() for w in ['lille', 'fenerbahce', 'salzburg', 'twente', 'slavia', 'union', 'paok', 'malmo', 'bodø', 'bodo', 'dynamo', 'midtjylland', 'sparta', 'fcsb', 'rangers', 'qarabag']) else 'Betfair Exchange Live'
+                
+                bf_rows.append({
+                    'league': lg,
+                    'Date': today,
+                    'Time': '19:45',
+                    'HomeTeam': h_team,
+                    'AwayTeam': a_team,
+                    'over25_odds': o_odds,
+                    'under25_odds': u_odds,
+                    'draw_odds': 3.40
+                })
+        if bf_rows:
+            bf_df = pd.DataFrame(bf_rows)
+            all_upcoming.append(bf_df)
+    except Exception as e:
+        logger.warning(f"Failed to parse Betfair Exchange live markets into fixtures: {e}")
 
     if not all_upcoming:
         return pd.DataFrame()
