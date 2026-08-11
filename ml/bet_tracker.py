@@ -144,9 +144,6 @@ def is_bet_recorded(home_team: str, away_team: str, market: str) -> bool:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# AUTO-SETTLEMENT
-# ─────────────────────────────────────────────────────────────────────────────
-
 _LEAGUE_CODE_MAP = {
     'EPL': 'E0', 'Premier League': 'E0', 'Championship': 'E1',
     'League 1': 'E2', 'League 2': 'E3', 'Conference': 'EC',
@@ -179,7 +176,6 @@ def _fetch_results_for_league(league: str) -> pd.DataFrame:
         from data_utils import download_league_data
         code = _LEAGUE_CODE_MAP.get(league, league)
         df = download_league_data(code)
-        # Only keep rows with completed scores
         if 'FTHG' in df.columns and 'FTAG' in df.columns:
             df = df.dropna(subset=['FTHG', 'FTAG'])
             df['FTHG'] = pd.to_numeric(df['FTHG'], errors='coerce')
@@ -192,10 +188,87 @@ def _fetch_results_for_league(league: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+_ESPN_SLUGS = {
+    'EPL': 'eng.1', 'Premier League': 'eng.1', 'Championship': 'eng.2',
+    'League 1': 'eng.3', 'League 2': 'eng.4', 'National League': 'eng.5', 'Conference': 'eng.5',
+    'Scottish Premiership': 'sco.1', 'Scottish Championship': 'sco.2',
+    'La Liga': 'esp.1', 'La_Liga': 'esp.1', 'Segunda Division': 'esp.2',
+    'Bundesliga': 'ger.1', 'Bundesliga 2': 'ger.2',
+    'Serie A': 'ita.1', 'Serie_A': 'ita.1', 'Serie B': 'ita.2',
+    'Ligue 1': 'fra.1', 'Ligue_1': 'fra.1', 'Ligue 2': 'fra.2',
+    'Eredivisie': 'ned.1', 'Netherlands': 'ned.1',
+    'Pro League': 'bel.1', 'Belgium': 'bel.1', 'Jupiler Pro League': 'bel.1',
+    'Liga Portugal': 'por.1', 'Portugal': 'por.1',
+    'Super Lig': 'tur.1', 'Turkey': 'tur.1',
+    'Super League': 'gre.1', 'Greece': 'gre.1',
+    'USA (MLS)': 'usa.1', 'USA': 'usa.1',
+    'Argentina': 'arg.1', 'Brazil': 'bra.1', 'Mexico': 'mex.1',
+    'Japan': 'jpn.1', 'China': 'chn.1', 'Sweden': 'swe.1', 'Norway': 'nor.1',
+    'Denmark': 'dnk.1', 'Finland': 'fin.1', 'Poland': 'pol.1', 'Romania': 'rou.1',
+    'Switzerland': 'sui.1', 'Austria': 'aut.1',
+    'UEFA Champions League': 'uefa.champions', 'UEFA CL Qualifying': 'uefa.champions_qual',
+    'UEFA Europa League': 'uefa.europa', 'UEFA EL Qualifying': 'uefa.europa_qual',
+    'UEFA Conference League': 'uefa.europa.conf',
+}
+
+_espn_cache: dict = {}
+
+
+def _fetch_espn_total_goals(league: str, home: str, away: str, m_date) -> float:
+    """Fetch completed match total goals from ESPN Scoreboard API."""
+    import requests
+    slug = _ESPN_SLUGS.get(league)
+    if not slug or pd.isnull(m_date):
+        return None
+
+    # Check match_date and adjacent days
+    dates_to_check = [
+        m_date.strftime('%Y%m%d'),
+        (m_date - pd.Timedelta(days=1)).strftime('%Y%m%d'),
+        (m_date + pd.Timedelta(days=1)).strftime('%Y%m%d')
+    ]
+
+    for d_str in dates_to_check:
+        cache_key = f"{slug}_{d_str}"
+        if cache_key in _espn_cache:
+            events = _espn_cache[cache_key]
+        else:
+            try:
+                url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/scoreboard?dates={d_str}"
+                r = requests.get(url, timeout=4)
+                events = r.json().get('events', []) if r.status_code == 200 else []
+                _espn_cache[cache_key] = events
+            except Exception:
+                events = []
+
+        for ev in events:
+            state = ev.get('status', {}).get('type', {}).get('state', '')
+            if state != 'post':
+                continue
+            comps = ev.get('competitions', [{}])[0].get('competitors', [])
+            if len(comps) < 2:
+                continue
+            h_comp = next((c for c in comps if c.get('homeAway') == 'home'), comps[0])
+            a_comp = next((c for c in comps if c.get('homeAway') == 'away'), comps[1])
+
+            h_name = h_comp.get('team', {}).get('displayName', '')
+            a_name = a_comp.get('team', {}).get('displayName', '')
+
+            if _teams_match(home, h_name) and _teams_match(away, a_name):
+                h_score = h_comp.get('score')
+                a_score = a_comp.get('score')
+                if h_score is not None and a_score is not None:
+                    try:
+                        return float(h_score) + float(a_score)
+                    except ValueError:
+                        pass
+    return None
+
+
 def auto_settle_bets() -> dict:
     """
     Automatically settle all PENDING bets by looking up actual match results
-    from the football-data.co.uk feed.
+    from football-data.co.uk CSV feeds, falling back to ESPN Scoreboard API.
 
     Returns a dict with keys:
         settled   – number of bets newly settled
@@ -228,40 +301,41 @@ def auto_settle_bets() -> dict:
             not_found += 1
             continue
 
+        total_goals = None
+
+        # Source 1: football-data.co.uk CSV
         results_df = _fetch_results_for_league(league)
-        if results_df.empty or 'HomeTeam' not in results_df.columns:
+        if not results_df.empty and 'HomeTeam' in results_df.columns:
+            if 'Date' in results_df.columns and pd.notnull(m_date):
+                date_mask = (
+                    (results_df['Date'] >= m_date - pd.Timedelta(days=1)) &
+                    (results_df['Date'] <= m_date + pd.Timedelta(days=1))
+                )
+                candidates = results_df[date_mask]
+            else:
+                candidates = results_df
+
+            matched = None
+            for _, res_row in candidates.iterrows():
+                if (_teams_match(home, str(res_row.get('HomeTeam', ''))) and
+                        _teams_match(away, str(res_row.get('AwayTeam', '')))):
+                    matched = res_row
+                    break
+
+            if matched is not None:
+                fthg = matched.get('FTHG')
+                ftag = matched.get('FTAG')
+                if pd.notna(fthg) and pd.notna(ftag):
+                    total_goals = float(fthg) + float(ftag)
+
+        # Source 2: ESPN Scoreboard API Fallback (if not found in CSV)
+        if total_goals is None:
+            total_goals = _fetch_espn_total_goals(league, home, away, m_date)
+
+        if total_goals is None:
             not_found += 1
             continue
 
-        # Filter to matches on or near the recorded date (±1 day tolerance)
-        if 'Date' in results_df.columns and pd.notnull(m_date):
-            date_mask = (
-                (results_df['Date'] >= m_date - pd.Timedelta(days=1)) &
-                (results_df['Date'] <= m_date + pd.Timedelta(days=1))
-            )
-            candidates = results_df[date_mask]
-        else:
-            candidates = results_df
-
-        # Fuzzy-match team names
-        matched = None
-        for _, res_row in candidates.iterrows():
-            if (_teams_match(home, str(res_row.get('HomeTeam', ''))) and
-                    _teams_match(away, str(res_row.get('AwayTeam', '')))):
-                matched = res_row
-                break
-
-        if matched is None:
-            not_found += 1
-            continue
-
-        fthg = matched.get('FTHG')
-        ftag = matched.get('FTAG')
-        if pd.isna(fthg) or pd.isna(ftag):
-            not_found += 1
-            continue
-
-        total_goals = float(fthg) + float(ftag)
         over25 = total_goals > 2.5
 
         if 'over' in market:
@@ -282,3 +356,4 @@ def auto_settle_bets() -> dict:
         df.to_csv(LOG_FILE, index=False)
 
     return {'settled': settled, 'not_found': not_found, 'already': already}
+
