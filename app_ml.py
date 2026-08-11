@@ -609,22 +609,51 @@ def render_ml_predictions_tab():
                                 'Denmark': 'DNK', 'Finland': 'FIN', 'Poland': 'POL', 'Romania': 'ROU',
                                 'Switzerland': 'SWZ', 'Austria': 'AUT', 'Ireland': 'IRL', 'Russia': 'RUS'
                             }
-                            l_code = code_reverse.get(league_name, league_name)
-                            lg_df = download_league_data(l_code)
+                            l_code = code_reverse.get(league_name, None)
+                            if l_code:
+                                lg_df = download_league_data(l_code)
+                            else:
+                                lg_df = pd.DataFrame()
                             st.session_state['league_history_cache'][league_name] = lg_df
                         except Exception:
                             lg_df = pd.DataFrame()
 
+                    # Build or load Master Cross-League Dataset for UEFA & Inter-League Team Lookups
+                    if 'master_cross_league_df' not in st.session_state or st.session_state['master_cross_league_df'].empty:
+                        try:
+                            from data_utils import download_league_data
+                            top_codes = ['E0', 'SP1', 'D1', 'I1', 'F1', 'N1', 'B1', 'P1', 'T1', 'G1', 'NOR', 'SWE', 'AUT', 'DNK', 'SC0']
+                            master_dfs = []
+                            for tc in top_codes:
+                                try:
+                                    tdf = st.session_state['league_history_cache'].get(tc)
+                                    if tdf is None or tdf.empty:
+                                        tdf = download_league_data(tc)
+                                        st.session_state['league_history_cache'][tc] = tdf
+                                    if not tdf.empty:
+                                        master_dfs.append(tdf)
+                                except Exception:
+                                    pass
+                            if master_dfs:
+                                st.session_state['master_cross_league_df'] = pd.concat(master_dfs, ignore_index=True)
+                            else:
+                                st.session_state['master_cross_league_df'] = pd.DataFrame()
+                        except Exception:
+                            st.session_state['master_cross_league_df'] = pd.DataFrame()
+
+                    # Fallback to Master Dataset if league_df is empty or fixture is UEFA / International
+                    search_df = lg_df if (lg_df is not None and not lg_df.empty and 'UEFA' not in league_name) else st.session_state.get('master_cross_league_df', pd.DataFrame())
+
                     model_prob_o25 = 0.55
 
-                    if lg_df is not None and not lg_df.empty:
+                    if search_df is not None and not search_df.empty:
                         import difflib
                         def match_team_exact(target_name, team_list):
                             target_norm = norm_team(target_name)
                             for t in team_list:
                                 if norm_team(t) == target_norm:
                                     return t
-                            matches = difflib.get_close_matches(target_norm, [norm_team(t) for t in team_list], n=1, cutoff=0.4)
+                            matches = difflib.get_close_matches(target_norm, [norm_team(t) for t in team_list], n=1, cutoff=0.35)
                             if matches:
                                 matched_norm = matches[0]
                                 for t in team_list:
@@ -632,13 +661,13 @@ def render_ml_predictions_tab():
                                         return t
                             return target_name
 
-                        if 'HomeTeam' in lg_df.columns:
-                            all_lg_teams = list(set(lg_df['HomeTeam'].dropna().unique()).union(set(lg_df['AwayTeam'].dropna().unique())))
+                        if 'HomeTeam' in search_df.columns:
+                            all_lg_teams = list(set(search_df['HomeTeam'].dropna().unique()).union(set(search_df['AwayTeam'].dropna().unique())))
                             matched_h = match_team_exact(h_team, all_lg_teams)
                             matched_a = match_team_exact(a_team, all_lg_teams)
 
-                            h_matches = lg_df[(lg_df['HomeTeam'] == matched_h) | (lg_df['AwayTeam'] == matched_h)]
-                            a_matches = lg_df[(lg_df['HomeTeam'] == matched_a) | (lg_df['AwayTeam'] == matched_a)]
+                            h_matches = search_df[(search_df['HomeTeam'] == matched_h) | (search_df['AwayTeam'] == matched_h)]
+                            a_matches = search_df[(search_df['HomeTeam'] == matched_a) | (search_df['AwayTeam'] == matched_a)]
                         else:
                             h_matches = pd.DataFrame()
                             a_matches = pd.DataFrame()
