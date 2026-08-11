@@ -350,13 +350,98 @@ def render_ml_predictions_tab():
                 if sel_league != "All Leagues":
                     filtered_fix = filtered_fix[filtered_fix['league'] == sel_league]
 
-                # Placed Bets Tracker & CSV Export Expander
-                from ml.bet_tracker import get_placed_bets, record_bet, is_bet_recorded
+                # Placed Bets Tracker, P/L Graph & CSV Export Expander
+                from ml.bet_tracker import get_placed_bets, record_bet, is_bet_recorded, update_bet_result
                 placed_df = get_placed_bets()
                 
-                with st.expander(f"📋 Placed Bets Log ({len(placed_df)} Bets Recorded)", expanded=False):
+                with st.expander(f"📈 Placed Bets Performance & P/L Growth Graph ({len(placed_df)} Bets Logged)", expanded=not placed_df.empty):
                     if not placed_df.empty:
-                        st.dataframe(placed_df, use_container_width=True)
+                        # Compute Summary Performance Metrics
+                        settled_df = placed_df[placed_df['Result'].isin(['WIN', 'LOSS'])]
+                        total_bets_count = len(placed_df)
+                        settled_count = len(settled_df)
+                        wins_count = sum(settled_df['Result'] == 'WIN')
+                        losses_count = sum(settled_df['Result'] == 'LOSS')
+                        win_rate_pct = (wins_count / settled_count * 100) if settled_count > 0 else 0.0
+                        tot_pl = placed_df['Profit_Loss_£'].sum()
+                        total_staked = settled_df['Recommended_Stake_£'].sum() if 'Recommended_Stake_£' in settled_df.columns else settled_count * 10.0
+                        roi_pct = (tot_pl / total_staked * 100) if total_staked > 0 else 0.0
+
+                        # Summary Metrics Cards
+                        pm1, pm2, pm3, pm4, pm5 = st.columns(5)
+                        pm1.metric("Total Bets Logged", f"{total_bets_count}")
+                        pm2.metric("Settled Bets (W/L)", f"{wins_count}W / {losses_count}L")
+                        pm3.metric("Win Rate", f"{win_rate_pct:.1f}%")
+                        pm4.metric("Total P/L (£)", f"£{tot_pl:+.2f}", delta=f"£{tot_pl:+.2f}")
+                        pm5.metric("ROI %", f"{roi_pct:+.1f}%", delta=f"{roi_pct:+.1f}%")
+
+                        # Plotly Interactive Cumulative Profit & Loss Growth Line Chart
+                        import plotly.graph_objects as go
+                        fig_pl = go.Figure()
+                        
+                        bet_indices = list(range(1, len(placed_df) + 1))
+                        cum_pl_series = placed_df['Cumulative_PL_£'].values
+
+                        line_color = "#00d4aa" if tot_pl >= 0 else "#ff4b4b"
+                        
+                        fig_pl.add_trace(go.Scatter(
+                            x=bet_indices,
+                            y=cum_pl_series,
+                            mode='lines+markers',
+                            name='Cumulative P/L (£)',
+                            line=dict(color=line_color, width=3),
+                            marker=dict(size=6, color=line_color),
+                            text=[f"Bet #{i}: {row['Home_Team']} vs {row['Away_Team']} ({row['Market']})<br>Result: {row['Result']} | P/L: £{row['Profit_Loss_£']:+.2f} | Cum: £{row['Cumulative_PL_£']:+.2f}" for i, (_, row) in enumerate(placed_df.iterrows(), 1)],
+                            hoverinfo='text'
+                        ))
+
+                        fig_pl.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", annotation_text="Break Even")
+
+                        fig_pl.update_layout(
+                            title="<b>Live Opportunity Scanner — Bankroll P/L Growth Curve (£)</b>",
+                            xaxis_title="Bet Number",
+                            yaxis_title="Profit / Loss (£)",
+                            template="plotly_dark",
+                            margin=dict(l=40, r=40, t=50, b=40),
+                            height=380,
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font=dict(family="Inter, sans-serif")
+                        )
+
+                        st.plotly_chart(fig_pl, width="stretch")
+
+                        # Interactive Result Status Editor
+                        st.subheader("📋 Logged Bets Table & Outcome Setter")
+                        st.caption("Click 'Set WIN' or 'Set LOSS' to update outcomes and refresh your P/L graph!")
+
+                        for idx, b_row in placed_df.iterrows():
+                            bc1, bc2, bc3, bc4, bc5, bc6 = st.columns([1.5, 2, 1.2, 1.2, 1.2, 1.5])
+                            bc1.write(f"**{b_row['Match_Date']}** ({b_row['League']})")
+                            bc2.write(f"{b_row['Home_Team']} vs {b_row['Away_Team']}")
+                            bc3.write(f"**{b_row['Market']}** @ {b_row['Odds']:.2f}")
+                            bc4.write(f"Stake: £{b_row.get('Recommended_Stake_£', 10.0):.2f}")
+                            
+                            res_val = str(b_row.get('Result', 'PENDING')).upper()
+                            if res_val == 'WIN':
+                                bc5.markdown(f"<span style='color: #00d4aa; font-weight: bold;'>✅ WIN (+£{b_row['Profit_Loss_£']:.2f})</span>", unsafe_allow_html=True)
+                            elif res_val == 'LOSS':
+                                bc5.markdown(f"<span style='color: #ff4b4b; font-weight: bold;'>❌ LOSS (-£{abs(b_row['Profit_Loss_£']):.2f})</span>", unsafe_allow_html=True)
+                            else:
+                                bc5.markdown("<span style='color: #ffbb00; font-weight: bold;'>⏳ PENDING</span>", unsafe_allow_html=True)
+
+                            with bc6:
+                                btn_w, btn_l = st.columns(2)
+                                if btn_w.button("✅ Win", key=f"set_win_{idx}"):
+                                    update_bet_result(idx, 'WIN')
+                                    st.toast(f"Updated Bet #{idx+1} to WIN!")
+                                    st.rerun()
+                                if btn_l.button("❌ Loss", key=f"set_loss_{idx}"):
+                                    update_bet_result(idx, 'LOSS')
+                                    st.toast(f"Updated Bet #{idx+1} to LOSS!")
+                                    st.rerun()
+                            st.divider()
+
                         csv_data = placed_df.to_csv(index=False).encode('utf-8')
                         st.download_button(
                             label="📥 Download Placed Bets CSV",
@@ -366,7 +451,7 @@ def render_ml_predictions_tab():
                             key="dl_placed_bets_csv"
                         )
                     else:
-                        st.info("No bets recorded yet. Click '📌 Record Bet' on any fixture card below to log a bet to CSV!")
+                        st.info("No bets recorded yet. Click '📌 Record Bet' on any fixture card below to log a bet and build your P/L graph!")
 
                 st.divider()
 
