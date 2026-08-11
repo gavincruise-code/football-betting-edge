@@ -344,9 +344,11 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
             'sco.1':  'Scottish Premiership',
             'eng.2':  'Championship',
             'sui.1':  'Switzerland',    'rou.1':  'Romania',
-            'uefa.champions':   'UEFA Champions League',
-            'uefa.europa':      'UEFA Europa League',
-            'uefa.europa.conf': 'UEFA Conference League',
+            'uefa.champions':     'UEFA Champions League',
+            'uefa.champions_qual':'UEFA CL Qualifying',
+            'uefa.europa':        'UEFA Europa League',
+            'uefa.europa_qual':   'UEFA EL Qualifying',
+            'uefa.europa.conf':   'UEFA Conference League',
         }
         espn_rows = []
         for slug, lg_name in espn_slugs.items():
