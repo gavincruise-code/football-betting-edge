@@ -365,27 +365,44 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
         bf_client = get_betfair_client()
         bf_mks = bf_client.fetch_all_live_markets()
         bf_rows = []
+        tomorrow = today + pd.Timedelta(days=2)
+        _noise = ['(res)', ' u18', ' u19', ' u20', ' u21', ' u23', 'reserve', 'reserves',
+                  'women', 'ladies', 'friendly', 'youth', 'amateur']
         for key_str, odds_info in bf_mks.items():
-            if ' v ' in key_str:
-                parts = key_str.split(' v ')
-                h_team = parts[0].strip().title()
-                a_team = parts[1].strip().title()
-                o_odds = odds_info.get('over25_odds', 1.85)
-                u_odds = odds_info.get('under25_odds', 1.95)
-                
-                # Assign league name based on match keywords or default to UEFA Champions League / Betfair Live
-                lg = 'UEFA Champions League' if any(w in key_str.lower() for w in ['lille', 'fenerbahce', 'salzburg', 'twente', 'slavia', 'union', 'paok', 'malmo', 'bodø', 'bodo', 'dynamo', 'midtjylland', 'sparta', 'fcsb', 'rangers', 'qarabag']) else 'Betfair Exchange Live'
-                
-                bf_rows.append({
-                    'league': lg,
-                    'Date': today,
-                    'Time': '19:45',
-                    'HomeTeam': h_team,
-                    'AwayTeam': a_team,
-                    'over25_odds': o_odds,
-                    'under25_odds': u_odds,
-                    'draw_odds': 3.40
-                })
+            if ' v ' not in key_str:
+                continue
+            if any(n in key_str.lower() for n in _noise):
+                continue
+            parts = key_str.split(' v ', 1)
+            h_team = parts[0].strip().title()
+            a_team = parts[1].strip().title()
+            o_odds = odds_info.get('over25_odds', 1.85)
+            u_odds = odds_info.get('under25_odds', 1.95)
+            raw_start = odds_info.get('market_start', '')
+            ev_date = pd.to_datetime(raw_start, utc=True, errors='coerce')
+            if pd.isnull(ev_date):
+                ev_date = today
+            else:
+                ev_date = ev_date.tz_localize(None)
+            if not (today <= ev_date.normalize() <= tomorrow):
+                continue
+            lg = 'UEFA Champions League' if any(
+                w in key_str.lower() for w in [
+                    'lille', 'fenerbahce', 'salzburg', 'twente', 'slavia', 'paok',
+                    'malmo', 'bodo', 'dynamo', 'midtjylland', 'sparta', 'fcsb',
+                    'rangers', 'qarabag', 'galatasaray', 'anderlecht', 'celtic', 'ajax'
+                ]
+            ) else 'Betfair Exchange Live'
+            bf_rows.append({
+                'league': lg,
+                'Date': ev_date.normalize(),
+                'Time': ev_date.strftime('%H:%M'),
+                'HomeTeam': h_team,
+                'AwayTeam': a_team,
+                'over25_odds': o_odds,
+                'under25_odds': u_odds,
+                'draw_odds': 3.40
+            })
         if bf_rows:
             bf_df = pd.DataFrame(bf_rows)
             all_upcoming.append(bf_df)

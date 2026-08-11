@@ -184,13 +184,19 @@ class BetfairExchangeClient:
             return {}
 
         try:
+            from datetime import timezone, timedelta
+            now_utc = datetime.utcnow()
+            from_dt = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+            to_dt   = (now_utc + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
             payload = {
                 "filter": {
                     "eventTypeIds": ["1"],  # Soccer
-                    "marketTypeCodes": ["OVER_UNDER_25"]
+                    "marketTypeCodes": ["OVER_UNDER_25"],
+                    "marketStartTime": {"from": from_dt, "to": to_dt}
                 },
                 "maxResults": 500,
-                "marketProjection": ["RUNNER_DESCRIPTION", "EVENT"]
+                "marketProjection": ["RUNNER_DESCRIPTION", "EVENT", "MARKET_START_TIME"]
             }
             url = f"{BETFAIR_API_URL}/listMarketCatalogue/"
             resp = requests.post(url, headers=self.get_headers(), json=payload, timeout=15)
@@ -270,9 +276,11 @@ class BetfairExchangeClient:
                             u25_price = best_p
                             
                     if o25_price or u25_price:
+                        ev_open = m.get("marketStartTime", m.get("event", {}).get("openDate", ""))
                         cache[norm_str(ev_name)] = {
                             "over25_odds": o25_price,
                             "under25_odds": u25_price,
+                            "market_start": ev_open,
                             "source": "Betfair Exchange API (Live)"
                         }
             self.market_cache = cache
