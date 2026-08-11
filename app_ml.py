@@ -351,10 +351,10 @@ def render_ml_predictions_tab():
                     filtered_fix = filtered_fix[filtered_fix['league'] == sel_league]
 
                 # Placed Bets Tracker, P/L Graph & CSV Export Expander
-                from ml.bet_tracker import get_placed_bets, record_bet, is_bet_recorded, update_bet_result
+                from ml.bet_tracker import get_placed_bets, record_bet, is_bet_recorded, update_bet_result, auto_settle_bets
                 placed_df = get_placed_bets()
                 
-                with st.expander(f"📈 Placed Bets Performance & P/L Growth Graph ({len(placed_df)} Bets Logged)", expanded=not placed_df.empty):
+                with st.expander(f"📈 Placed Bets Performance & P/L Growth Graph ({len(placed_df)} Bets Logged)", expanded=False):
                     if not placed_df.empty:
                         # Compute Summary Performance Metrics
                         settled_df = placed_df[placed_df['Result'].isin(['WIN', 'LOSS'])]
@@ -366,6 +366,23 @@ def render_ml_predictions_tab():
                         tot_pl = placed_df['Profit_Loss_£'].sum()
                         total_staked = settled_df['Recommended_Stake_£'].sum() if 'Recommended_Stake_£' in settled_df.columns else settled_count * 10.0
                         roi_pct = (tot_pl / total_staked * 100) if total_staked > 0 else 0.0
+
+                        # Auto-settle button
+                        as_col1, as_col2 = st.columns([2, 1])
+                        with as_col1:
+                            st.caption("🤖 Auto-settle checks completed match scores from the data feed and updates PENDING bets to WIN or LOSS automatically.")
+                        with as_col2:
+                            if st.button("🤖 Auto-Settle Results", key="auto_settle_btn", type="primary"):
+                                with st.spinner("Checking match results across all leagues..."):
+                                    settle_report = auto_settle_bets()
+                                placed_df = get_placed_bets()
+                                if settle_report['settled'] > 0:
+                                    st.success(f"✅ Auto-settled {settle_report['settled']} bet(s)! {settle_report['not_found']} still pending / result not yet available.")
+                                    st.rerun()
+                                else:
+                                    st.info(f"No new results found yet. {settle_report['not_found']} bet(s) still pending, {settle_report['already']} already settled.")
+
+                        st.divider()
 
                         # Summary Metrics Cards
                         pm1, pm2, pm3, pm4, pm5 = st.columns(5)
