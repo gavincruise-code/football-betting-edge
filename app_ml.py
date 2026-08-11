@@ -324,7 +324,19 @@ def render_ml_predictions_tab():
                     all_league_keys = ["All Leagues"] + sorted(list(set(list(UNDERSTAT_LEAGUES.keys()) + list(fix_df['league'].dropna().unique()))))
                     sel_league = st.selectbox("Filter League", all_league_keys)
                 with f_col3:
-                    scanner_model = st.selectbox("🤖 Model Strategy", ["Dual Ensemble (Recommended)", "Dixon-Coles Only", "XGBoost ML Only"], index=0)
+                    scanner_model = st.selectbox("🤖 Model Strategy", ["🎯 Auto-Optimal (By League)", "Dual Ensemble (Recommended)", "Dixon-Coles Only", "XGBoost ML Only"], index=0)
+
+                # Initialize League Strategy Mapping in session_state if not present
+                if 'league_strategy_map' not in st.session_state:
+                    st.session_state['league_strategy_map'] = {
+                        'La_Liga': 'Dixon-Coles Only',
+                        'La Liga': 'Dixon-Coles Only',
+                        'EPL': 'Dixon-Coles Only',
+                        'Premier League': 'Dixon-Coles Only',
+                        'Bundesliga': 'Dual Ensemble',
+                        'Serie_A': 'Dual Ensemble',
+                        'Ligue_1': 'Dual Ensemble'
+                    }
                 with f_col4:
                     edge_filter = st.slider("Min Edge %", 1, 15, 5, 1) / 100.0
                 with f_col5:
@@ -349,6 +361,31 @@ def render_ml_predictions_tab():
 
                 if sel_league != "All Leagues":
                     filtered_fix = filtered_fix[filtered_fix['league'] == sel_league]
+
+                # Expander for Auto-Optimal League Strategy Mapping
+                with st.expander("⚙️ Auto-Optimal League Strategy Mappings (Backtested)", expanded=(scanner_model == "🎯 Auto-Optimal (By League)")):
+                    st.markdown("""
+                    **Auto-Optimal Strategy Mode** automatically selects the highest-performing backtested strategy for each league:
+                    * **La Liga**: `Dixon-Coles Only` (+8.7% Flat ROI, +£419 Kelly P/L)
+                    * **EPL (Premier League)**: `Dixon-Coles Only` (+7.4% Flat ROI)
+                    * **Other Leagues**: `Dual Ensemble` (or customize below)
+                    """)
+                    
+                    st.subheader("Customize League Model Mappings:")
+                    lg_map = st.session_state.get('league_strategy_map', {})
+                    unique_lgs = sorted(list(set(fix_df['league'].dropna().unique())))
+                    
+                    mc1, mc2, mc3 = st.columns(3)
+                    for idx_lg, lg_k in enumerate(unique_lgs):
+                        c_target = [mc1, mc2, mc3][idx_lg % 3]
+                        cur_strat = lg_map.get(lg_k, "Dixon-Coles Only" if any(w in lg_k for w in ["La", "EPL", "Premier"]) else "Dual Ensemble")
+                        new_strat = c_target.selectbox(
+                            f"**{lg_k}**",
+                            ["Dixon-Coles Only", "Dual Ensemble", "XGBoost ML Only"],
+                            index=["Dixon-Coles Only", "Dual Ensemble", "XGBoost ML Only"].index(cur_strat) if cur_strat in ["Dixon-Coles Only", "Dual Ensemble", "XGBoost ML Only"] else 0,
+                            key=f"lg_strat_{lg_k}"
+                        )
+                        st.session_state['league_strategy_map'][lg_k] = new_strat
 
                 # Placed Bets Tracker, P/L Graph & CSV Export Expander
                 from ml.bet_tracker import get_placed_bets, record_bet, is_bet_recorded, update_bet_result, auto_settle_bets
@@ -624,11 +661,16 @@ def render_ml_predictions_tab():
                             a_mom = float(np.nanmean(a_scored[-5:])) - float(np.nanmean(a_scored)) if len(a_scored) >= 5 else 0
                             p_xgb = float(np.clip(p_dc + 0.08 * (h_mom + a_mom), 0.15, 0.85))
 
-                            if scanner_model == "Dixon-Coles Only":
+                            if scanner_model == "🎯 Auto-Optimal (By League)":
+                                effective_strat = st.session_state.get('league_strategy_map', {}).get(league_name, "Dixon-Coles Only" if any(w in league_name for w in ["La", "EPL", "Premier"]) else "Dual Ensemble")
+                            else:
+                                effective_strat = scanner_model
+
+                            if effective_strat == "Dixon-Coles Only":
                                 model_prob_o25 = p_dc
-                            elif scanner_model == "XGBoost ML Only":
+                            elif effective_strat == "XGBoost ML Only":
                                 model_prob_o25 = p_xgb
-                            else:  # Dual Ensemble (Recommended)
+                            else:  # Dual Ensemble
                                 model_prob_o25 = 0.5 * p_dc + 0.5 * p_xgb
                     
                     model_prob_u25 = 1.0 - model_prob_o25
@@ -697,7 +739,8 @@ def render_ml_predictions_tab():
                         'best_imp': best_imp,
                         'rec_k_stake': rec_k_stake,
                         'init_o25': init_o25,
-                        'init_u25': init_u25
+                        'init_u25': init_u25,
+                        'effective_strat': effective_strat if scanner_model != "🎯 Auto-Optimal (By League)" else f"🎯 Auto ({effective_strat})"
                     })
 
                 # SORT FIXTURES: +EV matches FIRST (True < False -> not x['is_val']), then CHRONOLOGICAL by kickoff time (sort_dt)
@@ -761,7 +804,7 @@ def render_ml_predictions_tab():
                                     away_team=a_team,
                                     market=best_market,
                                     odds=best_odds if pd.notna(best_odds) else 2.00,
-                                    strategy=scanner_model,
+                                    strategy=fix_info['effective_strat'],
                                     model_prob=best_prob,
                                     implied_prob=best_imp,
                                     edge_pct=best_edge,
