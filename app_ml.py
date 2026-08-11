@@ -579,6 +579,10 @@ def render_ml_predictions_tab():
                     u25 = init_u25
 
                     league_name = row.get('league', 'Unknown')
+                    if scanner_model == "🎯 Auto-Optimal (By League)":
+                        effective_strat = st.session_state.get('league_strategy_map', {}).get(league_name, "Dixon-Coles Only" if any(w in league_name for w in ["La", "EPL", "Premier"]) else "Dual Ensemble")
+                    else:
+                        effective_strat = scanner_model
                     
                     if 'league_history_cache' not in st.session_state:
                         st.session_state['league_history_cache'] = {}
