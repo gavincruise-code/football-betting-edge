@@ -101,10 +101,12 @@ def run_backtest(
             odds_over25=o25_odds, odds_under25=u25_odds, odds_draw=draw_odds, margin=edge_margin
         )
         
-        actual_h = current_match['FTHG']
-        actual_a = current_match['FTAG']
+        actual_h = current_match.get('FTHG')
+        actual_a = current_match.get('FTAG')
+        if pd.isna(actual_h) or pd.isna(actual_a):
+            continue
         actual_score = f"{int(actual_h)}-{int(actual_a)}"
-        total_goals = actual_h + actual_a
+        total_goals = float(actual_h) + float(actual_a)
         is_draw = actual_h == actual_a
         is_o25 = total_goals > 2.5
         
