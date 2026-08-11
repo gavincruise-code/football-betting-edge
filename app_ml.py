@@ -376,7 +376,6 @@ def render_ml_predictions_tab():
                         pm5.metric("ROI %", f"{roi_pct:+.1f}%", delta=f"{roi_pct:+.1f}%")
 
                         # Plotly Interactive Cumulative Profit & Loss Growth Line Chart
-                        import plotly.graph_objects as go
                         fig_pl = go.Figure()
                         
                         bet_indices = list(range(1, len(placed_df) + 1))
