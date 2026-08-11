@@ -250,174 +250,171 @@ def build_master_dataset(
 
 def fetch_upcoming_fixtures() -> pd.DataFrame:
     """
-    Downloads live upcoming fixtures feed from football-data.co.uk/fixtures.csv
-    AND scans global league feeds for unplayed upcoming matches.
-    
-    STRICT FILTERING:
-    - Only includes matches where Date >= Today (00:00:00).
-    - Excludes matches that have already completed (FTHG/FTAG/FTR populated).
+    Downloads live upcoming fixtures from:
+      Source 1 – football-data.co.uk/fixtures.csv  (all European leagues)
+      Source 2 – Global league CSVs                (MLS, Brazil, Japan, etc.)
+      Source 3 – ESPN scoreboard API               (same-day / next-day, incl. UEFA)
+
+    Strict filtering:
+      - Date >= today (no past matches)
+      - Date <= today + 7 days (no fixtures far in future)
+      - Excludes rows where FTHG/FTR is already filled (match finished)
     """
-    today = pd.Timestamp.now().normalize()
+    today    = pd.Timestamp.now().normalize()
+    max_date = today + pd.Timedelta(days=7)
     all_upcoming = []
 
-    # Source 1: Standard fixtures.csv
-    url = "https://www.football-data.co.uk/fixtures.csv"
+    # ── Source 1: football-data.co.uk/fixtures.csv ────────────────────────────
     try:
-        df = pd.read_csv(url)
-        if not df.empty:
+        import requests
+        url = "https://www.football-data.co.uk/fixtures.csv"
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            from io import StringIO
             from data_utils import normalize_columns
+            df = pd.read_csv(StringIO(resp.text))
             df = normalize_columns(df)
-
             if 'Date' in df.columns:
                 df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
-
-            # Filter strictly for today onwards AND unplayed matches
-            unplayed_mask = (df['Date'] >= today)
+            # Keep only upcoming unplayed matches within the next 7 days
+            mask = (df['Date'] >= today) & (df['Date'] <= max_date)
             if 'FTHG' in df.columns:
-                unplayed_mask = unplayed_mask & (df['FTHG'].isna())
-
-            df = df[unplayed_mask].copy()
-
+                mask = mask & df['FTHG'].isna()
+            df = df[mask].copy()
             div_map = {
-                'E0': 'EPL', 'E1': 'Championship', 'E2': 'League 1', 'E3': 'League 2', 'EC': 'Conference',
-                'SC0': 'Scottish Premiership', 'SC1': 'Scottish Championship', 'SC2': 'Scottish League 1', 'SC3': 'Scottish League 2',
-                'SP1': 'La_Liga', 'SP2': 'Segunda Division',
-                'D1': 'Bundesliga', 'D2': 'Bundesliga 2',
-                'I1': 'Serie_A', 'I2': 'Serie B',
-                'F1': 'Ligue_1', 'F2': 'Ligue 2',
-                'N1': 'Eredivisie', 'B1': 'Pro League',
-                'P1': 'Liga Portugal', 'T1': 'Super Lig', 'G1': 'Super League'
+                'E0': 'EPL',          'E1': 'Championship',     'E2': 'League 1',
+                'E3': 'League 2',     'EC': 'Conference',
+                'SC0': 'Scottish Premiership', 'SC1': 'Scottish Championship',
+                'SC2': 'Scottish League 1',    'SC3': 'Scottish League 2',
+                'SP1': 'La_Liga',     'SP2': 'Segunda Division',
+                'D1': 'Bundesliga',   'D2': 'Bundesliga 2',
+                'I1': 'Serie_A',      'I2': 'Serie B',
+                'F1': 'Ligue_1',      'F2': 'Ligue 2',
+                'N1': 'Eredivisie',   'B1': 'Pro League',
+                'P1': 'Liga Portugal','T1': 'Super Lig',         'G1': 'Super League',
             }
             if 'Div' in df.columns:
                 df['league'] = df['Div'].map(div_map).fillna(df['Div'])
-            all_upcoming.append(df)
+            if not df.empty:
+                all_upcoming.append(df)
     except Exception as e:
         logger.warning(f"Failed to fetch fixtures.csv: {e}")
 
-    # Source 2: Global Extra Leagues CSVs
+    # ── Source 2: Global Extra League CSVs ────────────────────────────────────
     from data_utils import GLOBAL_LEAGUE_CODES, download_league_data
+    gdf_map = {
+        'USA': 'USA (MLS)', 'ARG': 'Argentina', 'BRA': 'Brazil', 'MEX': 'Mexico',
+        'JPN': 'Japan',     'CHN': 'China',     'SWE': 'Sweden', 'NOR': 'Norway',
+        'DNK': 'Denmark',   'FIN': 'Finland',   'POL': 'Poland', 'ROU': 'Romania',
+        'SWZ': 'Switzerland','AUT': 'Austria',  'IRL': 'Ireland','RUS': 'Russia',
+    }
     for code in GLOBAL_LEAGUE_CODES:
         try:
             gdf = download_league_data(code)
-            if not gdf.empty and 'Date' in gdf.columns:
-                unplayed_g = gdf[(gdf['Date'] >= today) & (gdf['FTHG'].isna() | gdf['FTR'].isna())].copy()
-                if not unplayed_g.empty:
-                    gdf_map = {
-                        'USA': 'USA (MLS)', 'ARG': 'Argentina', 'BRA': 'Brazil', 'MEX': 'Mexico',
-                        'JPN': 'Japan', 'CHN': 'China', 'SWE': 'Sweden', 'NOR': 'Norway',
-                        'DNK': 'Denmark', 'FIN': 'Finland', 'POL': 'Poland', 'ROU': 'Romania',
-                        'SWZ': 'Switzerland', 'AUT': 'Austria'
-                    }
-                    unplayed_g['league'] = gdf_map.get(code, code)
-                    all_upcoming.append(unplayed_g)
+            if gdf.empty or 'Date' not in gdf.columns:
+                continue
+            fthg_col = 'FTHG' if 'FTHG' in gdf.columns else None
+            ftr_col  = 'FTR'  if 'FTR'  in gdf.columns else None
+            mask = (gdf['Date'] >= today) & (gdf['Date'] <= max_date)
+            if fthg_col:
+                mask = mask & gdf[fthg_col].isna()
+            elif ftr_col:
+                mask = mask & gdf[ftr_col].isna()
+            unplayed = gdf[mask].copy()
+            if not unplayed.empty:
+                unplayed['league'] = gdf_map.get(code, code)
+                all_upcoming.append(unplayed)
         except Exception as e:
             logger.warning(f"Failed to fetch global upcoming for {code}: {e}")
 
-    # Source 3: Real-Time Live Scoreboard API (captures same-day live fixtures across Sweden, MLS, Europe, Americas, Asia)
+    # ── Source 3: ESPN Scoreboard API (today's & tomorrow's fixtures) ─────────
     try:
-        import requests
         espn_slugs = {
-            'chn.1': 'China', 'jpn.1': 'Japan', 'swe.1': 'Sweden', 'usa.1': 'USA (MLS)',
-            'bel.1': 'Belgium', 'ned.1': 'Netherlands', 'por.1': 'Liga Portugal',
-            'tur.1': 'Turkey', 'gre.1': 'Greece', 'eng.1': 'EPL', 'esp.1': 'La_Liga',
-            'ger.1': 'Bundesliga', 'ita.1': 'Serie_A', 'fra.1': 'Ligue_1', 'arg.1': 'Argentina',
-            'bra.1': 'Brazil', 'mex.1': 'Mexico', 'nor.1': 'Norway',
-            'dnk.1': 'Denmark', 'fin.1': 'Finland', 'pol.1': 'Poland', 'aut.1': 'Austria',
-            'sco.1': 'Scottish Premiership', 'eng.2': 'Championship', 'sui.1': 'Switzerland',
-            'rou.1': 'Romania', 'uefa.champions': 'UEFA Champions League', 'uefa.europa': 'UEFA Europa League',
-            'uefa.europa.conf': 'UEFA Conference League'
+            'chn.1':  'China',          'jpn.1':  'Japan',
+            'swe.1':  'Sweden',         'usa.1':  'USA (MLS)',
+            'bel.1':  'Belgium',        'ned.1':  'Netherlands',
+            'por.1':  'Liga Portugal',  'tur.1':  'Turkey',
+            'gre.1':  'Greece',         'eng.1':  'EPL',
+            'esp.1':  'La_Liga',        'ger.1':  'Bundesliga',
+            'ita.1':  'Serie_A',        'fra.1':  'Ligue_1',
+            'arg.1':  'Argentina',      'bra.1':  'Brazil',
+            'mex.1':  'Mexico',         'nor.1':  'Norway',
+            'dnk.1':  'Denmark',        'fin.1':  'Finland',
+            'pol.1':  'Poland',         'aut.1':  'Austria',
+            'sco.1':  'Scottish Premiership',
+            'eng.2':  'Championship',
+            'sui.1':  'Switzerland',    'rou.1':  'Romania',
+            'uefa.champions':   'UEFA Champions League',
+            'uefa.europa':      'UEFA Europa League',
+            'uefa.europa.conf': 'UEFA Conference League',
         }
-        live_api_rows = []
+        espn_rows = []
         for slug, lg_name in espn_slugs.items():
             try:
-                resp = requests.get(f"https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/scoreboard", timeout=3)
-                if resp.status_code == 200:
-                    events = resp.json().get('events', [])
-                    for ev in events:
-                        comps = ev.get('competitions', [{}])[0].get('competitors', [])
-                        if len(comps) >= 2:
-                            h_name = next((c.get('team', {}).get('displayName') for c in comps if c.get('homeAway') == 'home'), comps[0].get('team', {}).get('displayName'))
-                            a_name = next((c.get('team', {}).get('displayName') for c in comps if c.get('homeAway') == 'away'), comps[1].get('team', {}).get('displayName'))
-                            ev_date = pd.to_datetime(ev.get('date'), errors='coerce')
-                            if pd.notnull(ev_date) and ev_date.tz_localize(None) >= today:
-                                live_api_rows.append({
-                                    'league': lg_name,
-                                    'Date': ev_date.tz_localize(None),
-                                    'Time': ev_date.strftime('%H:%M'),
-                                    'HomeTeam': h_name,
-                                    'AwayTeam': a_name,
-                                    'over25_odds': 1.85,
-                                    'under25_odds': 1.95,
-                                    'draw_odds': 3.40
-                                })
+                r = requests.get(
+                    f"https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/scoreboard",
+                    timeout=4
+                )
+                if r.status_code != 200:
+                    continue
+                for ev in r.json().get('events', []):
+                    # Only include events not yet completed
+                    status_type = ev.get('status', {}).get('type', {}).get('state', '')
+                    if status_type == 'post':   # already finished
+                        continue
+                    comps = ev.get('competitions', [{}])[0].get('competitors', [])
+                    if len(comps) < 2:
+                        continue
+                    h_name = next(
+                        (c.get('team', {}).get('displayName') for c in comps if c.get('homeAway') == 'home'),
+                        comps[0].get('team', {}).get('displayName')
+                    )
+                    a_name = next(
+                        (c.get('team', {}).get('displayName') for c in comps if c.get('homeAway') == 'away'),
+                        comps[1].get('team', {}).get('displayName')
+                    )
+                    raw_dt = ev.get('date', '')
+                    ev_date = pd.to_datetime(raw_dt, utc=True, errors='coerce')
+                    if pd.isnull(ev_date):
+                        continue
+                    ev_date = ev_date.tz_localize(None)
+                    # Strict window: today to +7 days
+                    if not (today <= ev_date.normalize() <= max_date):
+                        continue
+                    espn_rows.append({
+                        'league':        lg_name,
+                        'Date':          ev_date.normalize(),
+                        'Time':          ev_date.strftime('%H:%M'),
+                        'HomeTeam':      h_name,
+                        'AwayTeam':      a_name,
+                        'over25_odds':   1.85,
+                        'under25_odds':  1.95,
+                        'draw_odds':     3.40,
+                    })
             except Exception:
                 continue
-
-        if live_api_rows:
-            api_df = pd.DataFrame(live_api_rows)
-            all_upcoming.append(api_df)
+        if espn_rows:
+            all_upcoming.append(pd.DataFrame(espn_rows))
     except Exception as e:
-        logger.warning(f"Failed to fetch live API scoreboard: {e}")
+        logger.warning(f"Failed to fetch ESPN scoreboard: {e}")
 
-    # Source 4: Direct Betfair Exchange Live Markets Feed (captures all active live exchange matches worldwide including Champions League & Qualifiers)
-    try:
-        from ml.betfair_api import get_betfair_client
-        bf_client = get_betfair_client()
-        bf_mks = bf_client.fetch_all_live_markets()
-        bf_rows = []
-        tomorrow = today + pd.Timedelta(days=2)
-        _noise = ['(res)', ' u18', ' u19', ' u20', ' u21', ' u23', 'reserve', 'reserves',
-                  'women', 'ladies', 'friendly', 'youth', 'amateur']
-        for key_str, odds_info in bf_mks.items():
-            if ' v ' not in key_str:
-                continue
-            if any(n in key_str.lower() for n in _noise):
-                continue
-            parts = key_str.split(' v ', 1)
-            h_team = parts[0].strip().title()
-            a_team = parts[1].strip().title()
-            o_odds = odds_info.get('over25_odds', 1.85)
-            u_odds = odds_info.get('under25_odds', 1.95)
-            raw_start = odds_info.get('market_start', '')
-            ev_date = pd.to_datetime(raw_start, utc=True, errors='coerce')
-            if pd.isnull(ev_date):
-                ev_date = today
-            else:
-                ev_date = ev_date.tz_localize(None)
-            if not (today <= ev_date.normalize() <= tomorrow):
-                continue
-            lg = 'UEFA Champions League' if any(
-                w in key_str.lower() for w in [
-                    'lille', 'fenerbahce', 'salzburg', 'twente', 'slavia', 'paok',
-                    'malmo', 'bodo', 'dynamo', 'midtjylland', 'sparta', 'fcsb',
-                    'rangers', 'qarabag', 'galatasaray', 'anderlecht', 'celtic', 'ajax'
-                ]
-            ) else 'Betfair Exchange Live'
-            bf_rows.append({
-                'league': lg,
-                'Date': ev_date.normalize(),
-                'Time': ev_date.strftime('%H:%M'),
-                'HomeTeam': h_team,
-                'AwayTeam': a_team,
-                'over25_odds': o_odds,
-                'under25_odds': u_odds,
-                'draw_odds': 3.40
-            })
-        if bf_rows:
-            bf_df = pd.DataFrame(bf_rows)
-            all_upcoming.append(bf_df)
-    except Exception as e:
-        logger.warning(f"Failed to parse Betfair Exchange live markets into fixtures: {e}")
-
+    # ── Combine, deduplicate, sort ─────────────────────────────────────────────
     if not all_upcoming:
         return pd.DataFrame()
 
     res = pd.concat(all_upcoming, ignore_index=True)
+
+    # Deduplicate by fuzzy 5-char team key
     if 'HomeTeam' in res.columns and 'AwayTeam' in res.columns:
-        res['h_key'] = res['HomeTeam'].apply(lambda x: ''.join(c for c in str(x) if c.isalnum()).lower()[:5] if pd.notnull(x) else '')
-        res['a_key'] = res['AwayTeam'].apply(lambda x: ''.join(c for c in str(x) if c.isalnum()).lower()[:5] if pd.notnull(x) else '')
+        res['h_key'] = res['HomeTeam'].apply(
+            lambda x: ''.join(c for c in str(x) if c.isalnum()).lower()[:5] if pd.notnull(x) else ''
+        )
+        res['a_key'] = res['AwayTeam'].apply(
+            lambda x: ''.join(c for c in str(x) if c.isalnum()).lower()[:5] if pd.notnull(x) else ''
+        )
         res = res.drop_duplicates(subset=['h_key', 'a_key'], keep='first').drop(columns=['h_key', 'a_key'])
-    
+
     if 'Date' in res.columns:
         res = res.sort_values('Date').reset_index(drop=True)
+
     return res
