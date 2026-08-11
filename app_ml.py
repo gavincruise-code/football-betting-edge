@@ -644,7 +644,8 @@ def render_ml_predictions_tab():
                     # Fallback to Master Dataset if league_df is empty or fixture is UEFA / International
                     search_df = lg_df if (lg_df is not None and not lg_df.empty and 'UEFA' not in league_name) else st.session_state.get('master_cross_league_df', pd.DataFrame())
 
-                    model_prob_o25 = 0.55
+                    model_prob_o25 = np.nan
+                    has_data = False
 
                     if search_df is not None and not search_df.empty:
                         import difflib
@@ -673,6 +674,7 @@ def render_ml_predictions_tab():
                             a_matches = pd.DataFrame()
 
                         if not h_matches.empty and not a_matches.empty:
+                            has_data = True
                             h_recent = h_matches.tail(10)
                             a_recent = a_matches.tail(10)
 
@@ -706,44 +708,56 @@ def render_ml_predictions_tab():
                             else:  # Dual Ensemble
                                 model_prob_o25 = 0.5 * p_dc + 0.5 * p_xgb
                     
-                    model_prob_u25 = 1.0 - model_prob_o25
+                    if has_data and pd.notna(model_prob_o25):
+                        model_prob_u25 = 1.0 - model_prob_o25
+                        imp_o25 = implied_probability(o25) if pd.notna(o25) and o25 > 1.0 else 0.5
+                        imp_u25 = implied_probability(u25) if pd.notna(u25) and u25 > 1.0 else 0.5
 
-                    imp_o25 = implied_probability(o25) if pd.notna(o25) and o25 > 1.0 else 0.5
-                    imp_u25 = implied_probability(u25) if pd.notna(u25) and u25 > 1.0 else 0.5
+                        edge_o25 = model_prob_o25 - imp_o25
+                        edge_u25 = model_prob_u25 - imp_u25
 
-                    edge_o25 = model_prob_o25 - imp_o25
-                    edge_u25 = model_prob_u25 - imp_u25
+                        val_o25 = edge_o25 >= edge_filter
+                        val_u25 = edge_u25 >= edge_filter
+                        is_val = val_o25 or val_u25
 
-                    val_o25 = edge_o25 >= edge_filter
-                    val_u25 = edge_u25 >= edge_filter
-                    is_val = val_o25 or val_u25
+                        if val_o25 and val_u25:
+                            best_market = "Over 2.5" if edge_o25 >= edge_u25 else "Under 2.5"
+                            best_edge = max(edge_o25, edge_u25)
+                            best_odds = o25 if best_market == "Over 2.5" else u25
+                            best_prob = model_prob_o25 if best_market == "Over 2.5" else model_prob_u25
+                            best_imp = imp_o25 if best_market == "Over 2.5" else imp_u25
+                        elif val_o25:
+                            best_market = "Over 2.5"
+                            best_edge = edge_o25
+                            best_odds = o25
+                            best_prob = model_prob_o25
+                            best_imp = imp_o25
+                        elif val_u25:
+                            best_market = "Under 2.5"
+                            best_edge = edge_u25
+                            best_odds = u25
+                            best_prob = model_prob_u25
+                            best_imp = imp_u25
+                        else:
+                            best_market = "Over 2.5" if edge_o25 >= edge_u25 else "Under 2.5"
+                            best_edge = max(edge_o25, edge_u25)
+                            best_odds = o25 if edge_o25 >= edge_u25 else u25
+                            best_prob = model_prob_o25 if edge_o25 >= edge_u25 else model_prob_u25
+                            best_imp = imp_o25 if edge_o25 >= edge_u25 else imp_u25
 
-                    if val_o25 and val_u25:
-                        best_market = "Over 2.5" if edge_o25 >= edge_u25 else "Under 2.5"
-                        best_edge = max(edge_o25, edge_u25)
-                        best_odds = o25 if best_market == "Over 2.5" else u25
-                        best_prob = model_prob_o25 if best_market == "Over 2.5" else model_prob_u25
-                        best_imp = imp_o25 if best_market == "Over 2.5" else imp_u25
-                    elif val_o25:
-                        best_market = "Over 2.5"
-                        best_edge = edge_o25
-                        best_odds = o25
-                        best_prob = model_prob_o25
-                        best_imp = imp_o25
-                    elif val_u25:
-                        best_market = "Under 2.5"
-                        best_edge = edge_u25
-                        best_odds = u25
-                        best_prob = model_prob_u25
-                        best_imp = imp_u25
+                        rec_k_stake = kelly_stake(best_prob, best_odds, 1000.0) if pd.notna(best_odds) and best_odds > 1 else 10.0
                     else:
-                        best_market = "Over 2.5" if edge_o25 >= edge_u25 else "Under 2.5"
-                        best_edge = max(edge_o25, edge_u25)
-                        best_odds = o25 if edge_o25 >= edge_u25 else u25
-                        best_prob = model_prob_o25 if edge_o25 >= edge_u25 else model_prob_u25
-                        best_imp = imp_o25 if edge_o25 >= edge_u25 else imp_u25
-
-                    rec_k_stake = kelly_stake(best_prob, best_odds, 1000.0) if pd.notna(best_odds) and best_odds > 1 else 10.0
+                        model_prob_o25 = np.nan
+                        model_prob_u25 = np.nan
+                        edge_o25 = 0.0
+                        edge_u25 = 0.0
+                        is_val = False
+                        best_market = "Over 2.5"
+                        best_edge = -0.99
+                        best_odds = o25
+                        best_prob = np.nan
+                        best_imp = implied_probability(o25) if pd.notna(o25) and o25 > 1.0 else 0.5
+                        rec_k_stake = 0.0
 
                     if val_only and not is_val:
                         continue
@@ -773,7 +787,8 @@ def render_ml_predictions_tab():
                         'rec_k_stake': rec_k_stake,
                         'init_o25': init_o25,
                         'init_u25': init_u25,
-                        'effective_strat': effective_strat if scanner_model != "🎯 Auto-Optimal (By League)" else f"🎯 Auto ({effective_strat})"
+                        'effective_strat': effective_strat if scanner_model != "🎯 Auto-Optimal (By League)" else f"🎯 Auto ({effective_strat})",
+                        'has_data': has_data
                     })
 
                 # SORT FIXTURES: +EV matches FIRST (True < False -> not x['is_val']), then CHRONOLOGICAL by kickoff time (sort_dt)
@@ -790,6 +805,7 @@ def render_ml_predictions_tab():
                     m_date = item['m_date']
                     m_time = item['m_time']
                     is_val = item['is_val']
+                    has_data = item.get('has_data', True)
                     best_market = item['best_market']
                     best_edge = item['best_edge']
                     best_odds = item['best_odds']
@@ -797,21 +813,32 @@ def render_ml_predictions_tab():
                     best_imp = item['best_imp']
                     rec_k_stake = item['rec_k_stake']
                     
-                    card_border = "3px solid #00d4aa" if is_val else "1px solid rgba(255,255,255,0.1)"
-                    card_bg = "rgba(0, 212, 170, 0.05)" if is_val else "rgba(255,255,255,0.02)"
+                    if not has_data:
+                        card_border = "1px dashed #ffbb00"
+                        card_bg = "rgba(255, 187, 0, 0.04)"
+                        status_badge = '<span style="font-size: 1.05rem; font-weight: bold; color: #ffbb00;">⚠️ INSUFFICIENT DATA</span>'
+                        sub_label = '<span style="color: #ffbb00; font-weight: 600; font-size: 0.88rem;">⚠️ Not possible to make a model judgement (insufficient team history)</span>'
+                    elif is_val:
+                        card_border = "3px solid #00d4aa"
+                        card_bg = "rgba(0, 212, 170, 0.05)"
+                        status_badge = f'<span style="font-size: 1.2rem; font-weight: bold; color: #00d4aa;">✅ +EV OPPORTUNITY ({best_market})</span>'
+                        sub_label = f'<span style="color: #00d4aa; font-weight: 600; font-size: 0.95rem;">Recommended Bet: {best_market} Goals</span>'
+                    else:
+                        card_border = "1px solid rgba(255,255,255,0.1)"
+                        card_bg = "rgba(255,255,255,0.02)"
+                        status_badge = '<span style="font-size: 1.2rem; font-weight: bold; color: #ff4b4b;">❌ NO VALUE</span>'
+                        sub_label = f'<span style="color: #888; font-weight: 600; font-size: 0.95rem;">Evaluated Market: {best_market} Goals</span>'
 
                     st.markdown(f"""
                     <div style="background: {card_bg}; padding: 15px; margin-bottom: 12px; border-radius: 8px; border: {card_border};">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <span style="color: #888; font-size: 0.85rem;">{row['league']} • <b>{m_date} {m_time}</b> • Strategy: <b>{scanner_model}</b></span>
+                                <span style="color: #888; font-size: 0.85rem;">{row['league']} • <b>{m_date} {m_time}</b> • Strategy: <b>{item.get('effective_strat', scanner_model)}</b></span>
                                 <h4 style="margin: 4px 0;">{h_team} vs {a_team}</h4>
-                                <span style="color: #00d4aa; font-weight: 600; font-size: 0.95rem;">Recommended Bet: {best_market} Goals</span>
+                                {sub_label}
                             </div>
                             <div style="text-align: right;">
-                                <span style="font-size: 1.2rem; font-weight: bold; color: {'#00d4aa' if is_val else '#ff4b4b'};">
-                                    {'✅ +EV OPPORTUNITY (' + best_market + ')' if is_val else '❌ NO VALUE'}
-                                </span>
+                                {status_badge}
                             </div>
                         </div>
                     </div>
@@ -819,32 +846,35 @@ def render_ml_predictions_tab():
 
                     fc1, fc2, fc3, fc4, fc5, fc6 = st.columns([1, 1, 1, 1.1, 1.3, 1.2])
                     fc1.metric("Betfair Odds", f"{best_odds:.2f}" if pd.notna(best_odds) else "N/A")
-                    fc2.metric("Implied Prob", f"{best_imp*100:.1f}%")
-                    fc3.metric("Model Prob", f"{best_prob*100:.1f}%")
-                    fc4.metric(f"Edge % ({best_market})", f"{best_edge*100:+.1f}%", delta=f"{best_edge*100:+.1f}%" if is_val else None)
-                    fc5.metric("Quarter-Kelly Stake", f"£{rec_k_stake:.2f}")
+                    fc2.metric("Implied Prob", f"{best_imp*100:.1f}%" if pd.notna(best_imp) else "N/A")
+                    fc3.metric("Model Prob", f"{best_prob*100:.1f}%" if (has_data and pd.notna(best_prob)) else "N/A (No Data)")
+                    fc4.metric(f"Edge % ({best_market})", f"{best_edge*100:+.1f}%" if (has_data and pd.notna(best_edge)) else "N/A", delta=f"{best_edge*100:+.1f}%" if (has_data and is_val) else None)
+                    fc5.metric("Quarter-Kelly Stake", f"£{rec_k_stake:.2f}" if (has_data and is_val) else "N/A")
 
                     with fc6:
-                        already_logged = is_bet_recorded(h_team, a_team, best_market)
-                        if already_logged:
-                            st.success("📌 Bet Logged")
+                        if not has_data:
+                            st.info("⚠️ Data Unavailable")
                         else:
-                            if st.button("📌 Record Bet", key=f"rec_btn_{idx}"):
-                                record_bet(
-                                    date=m_date,
-                                    league=row.get('league', 'Unknown'),
-                                    home_team=h_team,
-                                    away_team=a_team,
-                                    market=best_market,
-                                    odds=best_odds if pd.notna(best_odds) else 2.00,
-                                    strategy=fix_info['effective_strat'],
-                                    model_prob=best_prob,
-                                    implied_prob=best_imp,
-                                    edge_pct=best_edge,
-                                    recommended_stake=rec_k_stake
-                                )
-                                st.toast(f"✅ Bet Recorded: {h_team} vs {a_team} ({best_market})")
-                                st.rerun()
+                            already_logged = is_bet_recorded(h_team, a_team, best_market)
+                            if already_logged:
+                                st.success("📌 Bet Logged")
+                            else:
+                                if st.button("📌 Record Bet", key=f"rec_btn_{idx}"):
+                                    record_bet(
+                                        date=m_date,
+                                        league=row.get('league', 'Unknown'),
+                                        home_team=h_team,
+                                        away_team=a_team,
+                                        market=best_market,
+                                        odds=best_odds if pd.notna(best_odds) else 2.00,
+                                        strategy=item.get('effective_strat', scanner_model),
+                                        model_prob=best_prob,
+                                        implied_prob=best_imp,
+                                        edge_pct=best_edge,
+                                        recommended_stake=rec_k_stake
+                                    )
+                                    st.toast(f"✅ Bet Recorded: {h_team} vs {a_team} ({best_market})")
+                                    st.rerun()
 
                     st.write("")
 
