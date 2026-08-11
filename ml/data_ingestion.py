@@ -343,6 +343,7 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
             'pol.1':  'Poland',         'aut.1':  'Austria',
             'sco.1':  'Scottish Premiership',
             'eng.2':  'Championship',
+            'eng.5':  'National League',
             'sui.1':  'Switzerland',    'rou.1':  'Romania',
             'uefa.champions':     'UEFA Champions League',
             'uefa.champions_qual':'UEFA CL Qualifying',
