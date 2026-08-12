@@ -14,9 +14,24 @@ primary_region = "lhr"
   auto_start_machines = true
   min_machines_running = 1
 
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+[[checks]]
+  name = "st_health"
+  type = "http"
+  path = "/_stcore/health"
+  interval = "15s"
+  timeout = "10s"
+  grace_period = "30s"
+  method = "get"
+
 [[vm]]
   memory = "512mb"
   cpu_kind = "shared"
   cpus = 1
+
 
 
