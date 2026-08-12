@@ -25,10 +25,22 @@ def _norm(name: str) -> str:
                      ('ö','o'),('ä','a'),('é','e'),('è','e'),('à','a'),('ç','c'),('ñ','n')]:
         s = s.replace(src, tgt)
     s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
-    for prefix in ['fc ', 'sk ', 'ac ', 'cd ', 'sc ', 'as ', 'ss ', 'sv ', 'bk ', 'if ']:
+    for prefix in ['f.c. ', 'fc ', 'fk ', 'ifk ', 'sk ', 'ac ', 'cd ', 'sc ', 'as ', 'ss ', 'sv ', 'bk ', 'if ', 'rb ', 'hsc ']:
         if s.startswith(prefix):
             s = s[len(prefix):]
+    aliases = {
+        'kobenhavn': 'copenhagen',
+        'copenhague': 'copenhagen',
+        'wien': 'vienna',
+        'munchen': 'munich',
+        'lisbon': 'sporting',
+        'crvena zvezda': 'red star',
+    }
+    for k, v in aliases.items():
+        if k in s:
+            s = s.replace(k, v)
     return s.strip()
+
 
 
 def _teams_match(a: str, b: str, cutoff: float = 0.5) -> bool:

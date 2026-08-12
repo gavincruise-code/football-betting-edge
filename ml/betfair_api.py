@@ -42,7 +42,22 @@ def norm_str(s: str) -> str:
     s = s.replace('ø', 'o').replace('æ', 'ae').replace('å', 'a').replace('ß', 'ss')
     s = s.replace('ü', 'u').replace('ö', 'o').replace('ä', 'a').replace('é', 'e').replace('è', 'e').replace('à', 'a').replace('ç', 'c').replace('ñ', 'n')
     n = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
-    return n.replace('ifk ', '').replace('fc ', '').replace('sk ', '').replace('ac ', '').replace('cd ', '').strip()
+    for prefix in ['f.c. ', 'fc ', 'fk ', 'ifk ', 'sk ', 'ac ', 'cd ', 'sc ', 'as ', 'ss ', 'sv ', 'bk ', 'if ', 'rb ', 'hsc ']:
+        if n.startswith(prefix):
+            n = n[len(prefix):]
+    aliases = {
+        'kobenhavn': 'copenhagen',
+        'copenhague': 'copenhagen',
+        'wien': 'vienna',
+        'munchen': 'munich',
+        'lisbon': 'sporting',
+        'crvena zvezda': 'red star',
+    }
+    for k, v in aliases.items():
+        if k in n:
+            n = n.replace(k, v)
+    return n.strip()
+
 
 
 class BetfairExchangeClient:
