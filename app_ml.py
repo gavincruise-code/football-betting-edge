@@ -362,30 +362,110 @@ def render_ml_predictions_tab():
                 if sel_league != "All Leagues":
                     filtered_fix = filtered_fix[filtered_fix['league'] == sel_league]
 
-                # Expander for Auto-Optimal League Strategy Mapping
-                with st.expander("⚙️ Auto-Optimal League Strategy Mappings (Backtested)", expanded=(scanner_model == "🎯 Auto-Optimal (By League)")):
-                    st.markdown("""
-                    **Auto-Optimal Strategy Mode** automatically selects the highest-performing backtested strategy for each league:
-                    * **La Liga**: `Dixon-Coles Only` (+8.7% Flat ROI, +£419 Kelly P/L)
-                    * **EPL (Premier League)**: `Dixon-Coles Only` (+7.4% Flat ROI)
-                    * **Other Leagues**: `Dual Ensemble` (or customize below)
-                    """)
-                    
-                    st.subheader("Customize League Model Mappings:")
-                    lg_map = st.session_state.get('league_strategy_map', {})
-                    unique_lgs = sorted(list(set(fix_df['league'].dropna().unique())))
-                    
-                    mc1, mc2, mc3 = st.columns(3)
-                    for idx_lg, lg_k in enumerate(unique_lgs):
-                        c_target = [mc1, mc2, mc3][idx_lg % 3]
-                        cur_strat = lg_map.get(lg_k, "Dixon-Coles Only" if any(w in lg_k for w in ["La", "EPL", "Premier"]) else "Dual Ensemble")
-                        new_strat = c_target.selectbox(
-                            f"**{lg_k}**",
-                            ["Dixon-Coles Only", "Dual Ensemble", "XGBoost ML Only"],
-                            index=["Dixon-Coles Only", "Dual Ensemble", "XGBoost ML Only"].index(cur_strat) if cur_strat in ["Dixon-Coles Only", "Dual Ensemble", "XGBoost ML Only"] else 0,
-                            key=f"lg_strat_{lg_k}"
+                # ── Auto-Optimal League Strategy Expander ──────────────────────────────
+                try:
+                    from ml.league_calibrator import (
+                        load_calibration_cache, calibrate_all_leagues,
+                        get_strategy_for_league, cache_age_hours,
+                        CALIBRATION_LEAGUES,
+                    )
+                    _cal_cache = load_calibration_cache()
+                except Exception:
+                    _cal_cache = {}
+
+                _age_h = cache_age_hours(_cal_cache)
+                _age_label = (
+                    f"last calibrated {_age_h:.0f}h ago"
+                    if _age_h is not None
+                    else "⚠️ not calibrated yet"
+                )
+
+                with st.expander(
+                    f"⚙️ Auto-Optimal League Strategy Mappings — {_age_label}",
+                    expanded=(scanner_model == "🎯 Auto-Optimal (By League)"),
+                ):
+                    hdr_col, btn_col = st.columns([3, 1])
+                    with hdr_col:
+                        if _age_h is None:
+                            st.warning(
+                                "No calibration data found. Click **Re-Calibrate** to run "
+                                "walk-forward backtests across all leagues and set optimal strategies."
+                            )
+                        elif _age_h > 168:   # > 7 days
+                            st.warning(
+                                f"⚠️ Calibration is {_age_h/24:.0f} days old — consider re-running."
+                            )
+                        else:
+                            st.success(
+                                f"✅ Calibration is current ({_age_label}). "
+                                "Strategies below are driven by live backtest results."
+                            )
+
+                    with btn_col:
+                        if st.button("🔄 Re-Calibrate All Leagues", key="recalibrate_btn", type="primary"):
+                            progress_bar = st.progress(0, text="Starting calibration…")
+                            def _cb(lg, i, tot):
+                                progress_bar.progress(
+                                    int((i / tot) * 100),
+                                    text=f"Backtesting {lg} ({i+1}/{tot})…"
+                                )
+                            with st.spinner("Running walk-forward backtests across all leagues…"):
+                                try:
+                                    _cal_cache = calibrate_all_leagues(progress_cb=_cb)
+                                    progress_bar.progress(100, text="Done!")
+                                    st.success(
+                                        f"✅ Calibrated {len(_cal_cache.get('leagues', {}))} leagues! "
+                                        "Auto-Optimal strategies have been updated."
+                                    )
+                                    st.rerun()
+                                except Exception as cal_err:
+                                    st.error(f"Calibration error: {cal_err}")
+
+                    # ── Per-league results table ────────────────────────────────────────
+                    _leagues_data = _cal_cache.get("leagues", {})
+                    if _leagues_data:
+                        rows = []
+                        for lg, info in sorted(_leagues_data.items()):
+                            rows.append({
+                                "League":        lg,
+                                "Strategy":      info.get("strategy", "—"),
+                                "Backtest ROI":  f"{info.get('backtest_roi', 0):+.1f}%",
+                                "P/L (£)":       f"£{info.get('backtest_pl', 0):+.0f}",
+                                "Bets":          info.get("backtest_bets", 0),
+                                "Avg Goals":     f"{info.get('avg_goals', 0):.2f}",
+                                "Draw %":        f"{info.get('draw_rate_pct', 0):.0f}%",
+                                "Min Edge":      f"{info.get('recommended_min_edge', 0.05)*100:.0f}%",
+                            })
+                        st.dataframe(
+                            pd.DataFrame(rows).set_index("League"),
+                            use_container_width=True,
                         )
-                        st.session_state['league_strategy_map'][lg_k] = new_strat
+                    else:
+                        # Fallback: show the customisable per-league dropdowns
+                        st.markdown("**Customize League Model Mappings (manual override):**")
+                        lg_map = st.session_state.get('league_strategy_map', {})
+                        unique_lgs = sorted(list(set(fix_df['league'].dropna().unique())))
+                        mc1, mc2, mc3 = st.columns(3)
+                        for idx_lg, lg_k in enumerate(unique_lgs):
+                            c_target = [mc1, mc2, mc3][idx_lg % 3]
+                            cur_strat = lg_map.get(
+                                lg_k,
+                                "Dixon-Coles Only"
+                                if any(w in lg_k for w in ["La", "EPL", "Premier"])
+                                else "Dual Ensemble",
+                            )
+                            new_strat = c_target.selectbox(
+                                f"**{lg_k}**",
+                                ["Dixon-Coles Only", "Dual Ensemble", "XGBoost ML Only"],
+                                index=(
+                                    ["Dixon-Coles Only", "Dual Ensemble", "XGBoost ML Only"].index(cur_strat)
+                                    if cur_strat in ["Dixon-Coles Only", "Dual Ensemble", "XGBoost ML Only"]
+                                    else 0
+                                ),
+                                key=f"lg_strat_{lg_k}",
+                            )
+                            st.session_state['league_strategy_map'][lg_k] = new_strat
+
 
                 # Placed Bets Tracker, P/L Graph & CSV Export Expander
                 from ml.bet_tracker import get_placed_bets, record_bet, is_bet_recorded, update_bet_result, auto_settle_bets
@@ -580,9 +660,18 @@ def render_ml_predictions_tab():
 
                     league_name = row.get('league', 'Unknown')
                     if scanner_model == "🎯 Auto-Optimal (By League)":
-                        effective_strat = st.session_state.get('league_strategy_map', {}).get(league_name, "Dixon-Coles Only" if any(w in league_name for w in ["La", "EPL", "Premier"]) else "Dual Ensemble")
+                        try:
+                            from ml.league_calibrator import get_strategy_for_league
+                            effective_strat = get_strategy_for_league(league_name, _cal_cache)
+                        except Exception:
+                            # Fallback heuristic if calibrator unavailable
+                            effective_strat = st.session_state.get('league_strategy_map', {}).get(
+                                league_name,
+                                "Dixon-Coles Only" if any(w in league_name for w in ["La", "EPL", "Premier"]) else "Dual Ensemble"
+                            )
                     else:
                         effective_strat = scanner_model
+
                     
                     if 'league_history_cache' not in st.session_state:
                         st.session_state['league_history_cache'] = {}
