@@ -94,9 +94,42 @@ def get_placed_bets() -> pd.DataFrame:
 
 
 def _git_sync_bet_log():
-    """Attempt background git commit and push of placed_bets_log.csv to keep GitHub in sync."""
-    import threading, subprocess
+    """Attempt background sync of placed_bets_log.csv to GitHub (via REST API or git)."""
+    import threading, requests, base64, subprocess
     def _worker():
+        gh_token = os.getenv("GITHUB_TOKEN", "")
+        repo = os.getenv("GITHUB_REPO", "gavincruise-code/football-betting-edge")
+
+        if gh_token:
+            try:
+                if not os.path.exists(LOG_FILE):
+                    return
+                with open(LOG_FILE, "r", encoding="utf-8") as f:
+                    content_str = f.read()
+
+                b64_content = base64.b64encode(content_str.encode("utf-8")).decode("utf-8")
+                url = f"https://api.github.com/repos/{repo}/contents/{LOG_FILE}"
+                headers = {
+                    "Authorization": f"Bearer {gh_token}",
+                    "Accept": "application/vnd.github+json"
+                }
+                r_get = requests.get(url, headers=headers, timeout=10)
+                sha = r_get.json().get("sha") if r_get.status_code == 200 else None
+
+                payload = {
+                    "message": "Auto-sync bet log from app [skip ci]",
+                    "content": b64_content,
+                }
+                if sha:
+                    payload["sha"] = sha
+
+                requests.put(url, headers=headers, json=payload, timeout=10)
+                logger.info("Synced placed_bets_log.csv to GitHub via REST API")
+                return
+            except Exception as e:
+                logger.warning(f"GitHub API sync error: {e}")
+
+        # Fallback to local git subprocess
         try:
             repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             subprocess.run(["git", "add", "placed_bets_log.csv"], cwd=repo_dir, capture_output=True, timeout=10)
@@ -104,8 +137,10 @@ def _git_sync_bet_log():
             subprocess.run(["git", "push", "origin", "main"], cwd=repo_dir, capture_output=True, timeout=15)
         except Exception:
             pass
+
     t = threading.Thread(target=_worker, daemon=True)
     t.start()
+
 
 
 def record_bet(
