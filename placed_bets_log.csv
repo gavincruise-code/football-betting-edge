@@ -1,32 +1,33 @@
 Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Model_Prob_%,Implied_Prob_%,Edge_%,Recommended_Stake_£,Notes,Result,Profit_Loss_£,Cumulative_PL_£
-2026-08-07 19:23:08,2026-08-07,Liga Portugal,Estoril,Famalicao,Under 2.5,2.64,Dual Ensemble,55.5,37.9,17.6,12.5,,WIN,0.0,0.0
-2026-08-08 11:05:24,2026-08-08,Japan,Avispa Fukuoka,Vissel Kobe,Under 2.5,1.52,Dual Ensemble (Recommended),79.4,65.8,13.7,50.0,,WIN,0.0,0.0
-2026-08-08 11:07:08,2026-08-08,Bundesliga 2,Karlsruhe,Bielefeld,Over 2.5,1.62,Dual Ensemble (Recommended),68.7,61.7,7.0,45.83,,WIN,0.0,0.0
-2026-08-08 11:07:09,2026-08-08,Bundesliga 2,Magdeburg,Braunschweig,Under 2.5,2.34,Dual Ensemble (Recommended),57.4,42.7,14.6,50.0,,LOSS,0.0,0.0
-2026-08-08 11:07:11,2026-08-08,Bundesliga 2,Wolfsburg,Kaiserslautern,Under 2.5,2.76,Dual Ensemble (Recommended),55.2,36.2,19.0,50.0,,WIN,0.0,0.0
-2026-08-08 11:22:26,2026-08-08,China,Yunnan Yukun,Chengdu Rongcheng,Under 2.5,3.55,Dual Ensemble (Recommended),35.5,28.2,7.3,25.38,,WIN,64.72,64.72
-2026-08-08 15:36:44,2026-08-08,Scottish Championship,Arbroath,Inverness C,Under 2.5,1.82,Dual Ensemble (Recommended),72.8,54.9,17.9,50.0,,WIN,0.0,64.72
-2026-08-08 15:38:47,2026-08-08,Norway,Viking FK,Sarpsborg FK,Under 2.5,3.35,Dual Ensemble (Recommended),46.2,29.9,16.3,50.0,,LOSS,-50.0,14.72
-2026-08-08 15:40:49,2026-08-08,Liga Portugal,Maritimo,Casa Pia,Over 2.5,2.38,Dual Ensemble (Recommended),52.9,42.0,10.9,47.05,,LOSS,0.0,14.72
-2026-08-08 15:59:32,2026-08-08,Pro League,Standard,Cercle Brugge,Over 2.5,2.02,Dual Ensemble (Recommended),65.1,49.5,15.6,50.0,,WIN,0.0,14.72
-2026-08-08 15:59:46,2026-08-08,Eredivisie,Go Ahead Eagles,Willem II,Under 2.5,2.54,Dual Ensemble (Recommended),49.6,39.4,10.2,42.17,,LOSS,0.0,14.72
-2026-08-08 16:01:11,2026-08-08,Eredivisie,PSV Eindhoven,For Sittard,Over 2.5,2.0,Dual Ensemble (Recommended),77.0,50.0,27.0,50.0,,WIN,0.0,14.72
-2026-08-08 16:02:04,2026-08-08,Netherlands,AZ Alkmaar,ADO Den Haag,Under 2.5,2.78,Dual Ensemble (Recommended),48.3,36.0,12.3,48.18,,WIN,0.0,14.72
-2026-08-08 16:02:59,2026-08-08,Ligue 2,Sochaux,St Etienne,Over 2.5,2.1,Dual Ensemble (Recommended),62.1,47.6,14.5,50.0,,WIN,0.0,14.72
-2026-08-09 09:22:30,2026-08-09,Japan,Tokyo Verdy 1969,Kawasaki Frontale,Over 2.5,2.4,Dual Ensemble (Recommended),50.5,41.7,8.9,37.95,,LOSS,0.0,14.72
-2026-08-09 11:50:30,2026-08-09,Sweden,Hammarby IF,BK Häcken,Under 2.5,3.45,Dual Ensemble (Recommended),40.0,29.0,11.0,38.73,,LOSS,-38.73,-24.01
-2026-08-09 11:51:13,2026-08-09,Eredivisie,Zwolle,Ajax,Under 2.5,2.82,Dual Ensemble (Recommended),46.0,35.5,10.5,40.87,,WIN,0.0,-24.01
-2026-08-09 11:51:14,2026-08-09,Belgium,Zulte-Waregem,Racing Genk,Under 2.5,2.2,Dual Ensemble (Recommended),57.8,45.5,12.3,50.0,,LOSS,0.0,-24.01
-2026-08-09 11:52:04,2026-08-09,Brazil,Cruzeiro,Mirassol,Under 2.5,1.9,Dual Ensemble (Recommended),61.4,52.6,8.7,46.12,,LOSS,-46.12,-70.13
-2026-08-09 11:52:06,2026-08-09,Sweden,IFK Göteborg,Kalmar FF,Over 2.5,1.79,Dual Ensemble (Recommended),65.2,55.9,9.3,50.0,,WIN,39.5,-30.63
-2026-08-09 11:52:28,2026-08-09,Netherlands,Heerenveen,FC Twente,Under 2.5,2.78,Dual Ensemble (Recommended),43.9,36.0,8.0,31.11,,WIN,0.0,-30.63
-2026-08-09 11:54:01,2026-08-09,Scottish Premiership,Motherwell,Falkirk,Over 2.5,1.8,Dual Ensemble (Recommended),68.5,55.6,12.9,50.0,,LOSS,0.0,-30.63
-2026-08-09 11:55:12,2026-08-09,Liga Portugal,Porto,Alverca,Under 2.5,2.5,Dual Ensemble (Recommended),54.7,40.0,14.7,50.0,,WIN,0.0,-30.63
-2026-08-09 11:55:53,2026-08-09,Pro League,Anderlecht,RAAL La Louviere,Over 2.5,2.0,Dual Ensemble (Recommended),67.2,50.0,17.2,50.0,,WIN,0.0,-30.63
-2026-08-09 11:57:10,2026-08-09,Pro League,Antwerp,Beveren,Over 2.5,2.14,Dual Ensemble (Recommended),55.7,46.7,9.0,42.11,,WIN,0.0,-30.63
-2026-08-09 11:58:15,2026-08-09,Liga Portugal,Benfica,Académico de Viseu,Under 2.5,3.0,Dual Ensemble (Recommended),44.9,33.3,11.6,43.35,,LOSS,0.0,-30.63
-2026-08-09 11:59:33,2026-08-09,Argentina,Defensa y Justicia,Newell's Old Boys,Over 2.5,2.68,Dual Ensemble (Recommended),52.4,37.3,15.1,50.0,,WIN,84.0,53.37
-2026-08-09 11:59:35,2026-08-09,Brazil,Flamengo,Vitória,Under 2.5,2.46,Dual Ensemble (Recommended),51.6,40.7,11.0,46.16,,WIN,67.39,120.76
-2026-08-11 15:16:53,2026-08-11,UEFA CL Qualifying,Kauno Zalgiris,Dinamo Zagreb,Under 2.5,2.26,🎯 Auto (Dual Ensemble),55.7,44.2,11.4,50.0,,LOSS,0.0,120.76
-2026-08-11 15:16:55,2026-08-11,UEFA CL Qualifying,NEC Nijmegen,Olympiacos,Under 2.5,2.06,🎯 Auto (Dual Ensemble),57.7,48.5,9.2,44.62,,PENDING,0.0,120.76
-2026-08-11 15:16:56,2026-08-11,UEFA CL Qualifying,NK Celje,Ararat-Armenia,Under 2.5,2.48,🎯 Auto (Dual Ensemble),55.1,40.3,14.7,50.0,,PENDING,0.0,120.76
+2026-08-07 19:23:08,2026-08-07,Liga Portugal,Estoril,Famalicao,Under 2.5,2.64,Dual Ensemble,55.5,37.9,17.6,12.5,,WIN,20.5,20.5
+2026-08-08 11:05:24,2026-08-08,Japan,Avispa Fukuoka,Vissel Kobe,Under 2.5,1.52,Dual Ensemble (Recommended),79.4,65.8,13.7,50.0,,WIN,26.0,46.5
+2026-08-08 11:07:08,2026-08-08,Bundesliga 2,Karlsruhe,Bielefeld,Over 2.5,1.62,Dual Ensemble (Recommended),68.7,61.7,7.0,45.83,,WIN,28.41,74.91
+2026-08-08 11:07:09,2026-08-08,Bundesliga 2,Magdeburg,Braunschweig,Under 2.5,2.34,Dual Ensemble (Recommended),57.4,42.7,14.6,50.0,,LOSS,-50.0,24.91
+2026-08-08 11:07:11,2026-08-08,Bundesliga 2,Wolfsburg,Kaiserslautern,Under 2.5,2.76,Dual Ensemble (Recommended),55.2,36.2,19.0,50.0,,WIN,88.0,112.91
+2026-08-08 11:22:26,2026-08-08,China,Yunnan Yukun,Chengdu Rongcheng,Under 2.5,3.55,Dual Ensemble (Recommended),35.5,28.2,7.3,25.38,,WIN,64.72,177.63
+2026-08-08 15:36:44,2026-08-08,Scottish Championship,Arbroath,Inverness C,Under 2.5,1.82,Dual Ensemble (Recommended),72.8,54.9,17.9,50.0,,WIN,41.0,218.63
+2026-08-08 15:38:47,2026-08-08,Norway,Viking FK,Sarpsborg FK,Under 2.5,3.35,Dual Ensemble (Recommended),46.2,29.9,16.3,50.0,,LOSS,-50.0,168.63
+2026-08-08 15:40:49,2026-08-08,Liga Portugal,Maritimo,Casa Pia,Over 2.5,2.38,Dual Ensemble (Recommended),52.9,42.0,10.9,47.05,,LOSS,-47.05,121.58
+2026-08-08 15:59:32,2026-08-08,Pro League,Standard,Cercle Brugge,Over 2.5,2.02,Dual Ensemble (Recommended),65.1,49.5,15.6,50.0,,WIN,51.0,172.58
+2026-08-08 15:59:46,2026-08-08,Eredivisie,Go Ahead Eagles,Willem II,Under 2.5,2.54,Dual Ensemble (Recommended),49.6,39.4,10.2,42.17,,LOSS,-42.17,130.41
+2026-08-08 16:01:11,2026-08-08,Eredivisie,PSV Eindhoven,For Sittard,Over 2.5,2.0,Dual Ensemble (Recommended),77.0,50.0,27.0,50.0,,WIN,50.0,180.41
+2026-08-08 16:02:04,2026-08-08,Netherlands,AZ Alkmaar,ADO Den Haag,Under 2.5,2.78,Dual Ensemble (Recommended),48.3,36.0,12.3,48.18,,WIN,85.76,266.17
+2026-08-08 16:02:59,2026-08-08,Ligue 2,Sochaux,St Etienne,Over 2.5,2.1,Dual Ensemble (Recommended),62.1,47.6,14.5,50.0,,WIN,55.0,321.17
+2026-08-09 09:22:30,2026-08-09,Japan,Tokyo Verdy 1969,Kawasaki Frontale,Over 2.5,2.4,Dual Ensemble (Recommended),50.5,41.7,8.9,37.95,,LOSS,-37.95,283.22
+2026-08-09 11:50:30,2026-08-09,Sweden,Hammarby IF,BK Häcken,Under 2.5,3.45,Dual Ensemble (Recommended),40.0,29.0,11.0,38.73,,LOSS,-38.73,244.49
+2026-08-09 11:51:13,2026-08-09,Eredivisie,Zwolle,Ajax,Under 2.5,2.82,Dual Ensemble (Recommended),46.0,35.5,10.5,40.87,,WIN,74.38,318.87
+2026-08-09 11:51:14,2026-08-09,Belgium,Zulte-Waregem,Racing Genk,Under 2.5,2.2,Dual Ensemble (Recommended),57.8,45.5,12.3,50.0,,LOSS,-50.0,268.87
+2026-08-09 11:52:04,2026-08-09,Brazil,Cruzeiro,Mirassol,Under 2.5,1.9,Dual Ensemble (Recommended),61.4,52.6,8.7,46.12,,LOSS,-46.12,222.75
+2026-08-09 11:52:06,2026-08-09,Sweden,IFK Göteborg,Kalmar FF,Over 2.5,1.79,Dual Ensemble (Recommended),65.2,55.9,9.3,50.0,,WIN,39.5,262.25
+2026-08-09 11:52:28,2026-08-09,Netherlands,Heerenveen,FC Twente,Under 2.5,2.78,Dual Ensemble (Recommended),43.9,36.0,8.0,31.11,,WIN,55.38,317.63
+2026-08-09 11:54:01,2026-08-09,Scottish Premiership,Motherwell,Falkirk,Over 2.5,1.8,Dual Ensemble (Recommended),68.5,55.6,12.9,50.0,,LOSS,-50.0,267.63
+2026-08-09 11:55:12,2026-08-09,Liga Portugal,Porto,Alverca,Under 2.5,2.5,Dual Ensemble (Recommended),54.7,40.0,14.7,50.0,,WIN,75.0,342.63
+2026-08-09 11:55:53,2026-08-09,Pro League,Anderlecht,RAAL La Louviere,Over 2.5,2.0,Dual Ensemble (Recommended),67.2,50.0,17.2,50.0,,WIN,50.0,392.63
+2026-08-09 11:57:10,2026-08-09,Pro League,Antwerp,Beveren,Over 2.5,2.14,Dual Ensemble (Recommended),55.7,46.7,9.0,42.11,,WIN,48.01,440.64
+2026-08-09 11:58:15,2026-08-09,Liga Portugal,Benfica,Académico de Viseu,Under 2.5,3.0,Dual Ensemble (Recommended),44.9,33.3,11.6,43.35,,LOSS,-43.35,397.29
+2026-08-09 11:59:33,2026-08-09,Argentina,Defensa y Justicia,Newell's Old Boys,Over 2.5,2.68,Dual Ensemble (Recommended),52.4,37.3,15.1,50.0,,WIN,84.0,481.29
+2026-08-09 11:59:35,2026-08-09,Brazil,Flamengo,Vitória,Under 2.5,2.46,Dual Ensemble (Recommended),51.6,40.7,11.0,46.16,,WIN,67.39,548.68
+2026-08-11 15:16:53,2026-08-11,UEFA CL Qualifying,Kauno Zalgiris,Dinamo Zagreb,Under 2.5,2.26,🎯 Auto (Dual Ensemble),55.7,44.2,11.4,50.0,,LOSS,-50.0,498.68
+2026-08-11 15:16:55,2026-08-11,UEFA CL Qualifying,NEC Nijmegen,Olympiacos,Under 2.5,2.06,🎯 Auto (Dual Ensemble),57.7,48.5,9.2,44.62,,LOSS,0.0,498.68
+2026-08-11 15:16:56,2026-08-11,UEFA CL Qualifying,NK Celje,Ararat-Armenia,Under 2.5,2.48,🎯 Auto (Dual Ensemble),55.1,40.3,14.7,50.0,,WIN,0.0,498.68
+2026-08-11 22:46:12,2026-08-12,Argentina,Talleres (Córdoba),Lanús,Under 2.5,1.49,🎯 Auto (Dual Ensemble),79.7,67.1,12.6,50.0,,LOSS,0.0,498.68

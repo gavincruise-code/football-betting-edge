@@ -115,6 +115,54 @@ except Exception as e:
     render_ml_predictions_tab = None
 
 # -----------------------------------------
+# AUTO-CALIBRATION ON STARTUP
+# Runs a background thread to recalibrate league strategies
+# if the cache is missing or older than 7 days.
+# -----------------------------------------
+def _run_calibration_background():
+    """Spawn calibration in a daemon thread so it doesn't block the UI."""
+    import threading
+    def _worker():
+        try:
+            from ml.league_calibrator import calibrate_all_leagues
+            calibrate_all_leagues(n_matches=300)
+        except Exception:
+            pass
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+
+try:
+    from ml.league_calibrator import load_calibration_cache, cache_age_hours
+    _cache = load_calibration_cache()
+    _age = cache_age_hours(_cache)
+
+    if _age is None:
+        # First run — no cache exists yet
+        if not st.session_state.get('_calibration_started'):
+            st.session_state['_calibration_started'] = True
+            _run_calibration_background()
+        st.info(
+            "⏳ **First-run calibration in progress** — the model is backtesting all 34 leagues "
+            "in the background to determine optimal strategies. This takes ~3 minutes and only "
+            "happens once. The scanner is fully usable in the meantime.",
+            icon="🔄",
+        )
+    elif _age > 168:  # older than 7 days
+        if not st.session_state.get('_calibration_started'):
+            st.session_state['_calibration_started'] = True
+            _run_calibration_background()
+        st.toast(
+            f"🔄 Auto-calibration running in background (cache was {_age/24:.0f} days old).",
+            icon="⚙️",
+        )
+    else:
+        # Cache is fresh — clear the flag so it can trigger again next week
+        st.session_state.pop('_calibration_started', None)
+except Exception:
+    pass
+
+
+# -----------------------------------------
 # HEADER & NAVIGATION
 # -----------------------------------------
 st.markdown('<div class="gradient-text">⚽ Football Edge Finder</div>', unsafe_allow_html=True)
