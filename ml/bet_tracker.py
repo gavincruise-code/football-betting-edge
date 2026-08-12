@@ -208,7 +208,7 @@ _ESPN_SLUGS = {
     'Switzerland': 'sui.1', 'Austria': 'aut.1',
     'UEFA Champions League': 'uefa.champions', 'UEFA CL Qualifying': 'uefa.champions_qual',
     'UEFA Europa League': 'uefa.europa', 'UEFA EL Qualifying': 'uefa.europa_qual',
-    'UEFA Conference League': 'uefa.europa.conf',
+    'UEFA Conference League': 'uefa.europa.conf', 'UEFA ECL Qualifying': 'uefa.europa.conf_qual',
 }
 
 _espn_cache: dict = {}
