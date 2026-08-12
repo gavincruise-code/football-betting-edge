@@ -93,6 +93,21 @@ def get_placed_bets() -> pd.DataFrame:
     return pd.DataFrame()
 
 
+def _git_sync_bet_log():
+    """Attempt background git commit and push of placed_bets_log.csv to keep GitHub in sync."""
+    import threading, subprocess
+    def _worker():
+        try:
+            repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            subprocess.run(["git", "add", "placed_bets_log.csv"], cwd=repo_dir, capture_output=True, timeout=10)
+            subprocess.run(["git", "commit", "-m", "Auto-sync bet log"], cwd=repo_dir, capture_output=True, timeout=10)
+            subprocess.run(["git", "push", "origin", "main"], cwd=repo_dir, capture_output=True, timeout=15)
+        except Exception:
+            pass
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+
+
 def record_bet(
     date: str,
     league: str,
@@ -129,6 +144,7 @@ def record_bet(
     df = get_placed_bets()
     df = pd.concat([df, pd.DataFrame([record])], ignore_index=True)
     df.to_csv(LOG_FILE, index=False)
+    _git_sync_bet_log()
     return True
 
 
@@ -139,7 +155,9 @@ def update_bet_result(row_idx: int, result: str) -> bool:
         return False
     df.loc[row_idx, 'Result'] = str(result).upper()
     df.to_csv(LOG_FILE, index=False)
+    _git_sync_bet_log()
     return True
+
 
 
 def is_bet_recorded(home_team: str, away_team: str, market: str) -> bool:
