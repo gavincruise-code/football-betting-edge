@@ -31,4 +31,5 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-08-11 15:16:55,2026-08-11,UEFA CL Qualifying,NEC Nijmegen,Olympiacos,Under 2.5,2.06,🎯 Auto (Dual Ensemble),57.7,48.5,9.2,44.62,,LOSS,-44.62,454.06
 2026-08-11 15:16:56,2026-08-11,UEFA CL Qualifying,NK Celje,Ararat-Armenia,Under 2.5,2.48,🎯 Auto (Dual Ensemble),55.1,40.3,14.7,50.0,,WIN,74.0,528.06
 2026-08-11 22:46:12,2026-08-12,Argentina,Talleres (Córdoba),Lanús,Under 2.5,1.49,🎯 Auto (Dual Ensemble),79.7,67.1,12.6,50.0,,LOSS,-50.0,478.06
-2026-08-13 09:16:24,2026-08-13,UEFA ECL Qualifying,FK Qarabag,Dynamo Kyiv,Under 2.5,2.0,🎯 Auto (Dual Ensemble),64.3,50.0,14.3,50.0,,PENDING,0.0,0.0
+2026-08-13 09:16:24,2026-08-13,UEFA ECL Qualifying,FK Qarabag,Dynamo Kyiv,Under 2.5,2.0,🎯 Auto (Dual Ensemble),64.3,50.0,14.3,50.0,,PENDING,0.0,478.06
+2026-08-13 09:19:24,2026-08-13,UEFA ECL Qualifying,FC Nordsjælland,Valur Reykjavik,Under 2.5,4.5,🎯 Auto (Dual Ensemble),42.4,22.2,20.2,50.0,,PENDING,0.0,0.0
