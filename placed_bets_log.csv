@@ -28,6 +28,7 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-08-09 11:59:33,2026-08-09,Argentina,Defensa y Justicia,Newell's Old Boys,Over 2.5,2.68,Dual Ensemble (Recommended),52.4,37.3,15.1,50.0,,WIN,84.0,481.29
 2026-08-09 11:59:35,2026-08-09,Brazil,Flamengo,Vitória,Under 2.5,2.46,Dual Ensemble (Recommended),51.6,40.7,11.0,46.16,,WIN,67.39,548.68
 2026-08-11 15:16:53,2026-08-11,UEFA CL Qualifying,Kauno Zalgiris,Dinamo Zagreb,Under 2.5,2.26,🎯 Auto (Dual Ensemble),55.7,44.2,11.4,50.0,,LOSS,-50.0,498.68
-2026-08-11 15:16:55,2026-08-11,UEFA CL Qualifying,NEC Nijmegen,Olympiacos,Under 2.5,2.06,🎯 Auto (Dual Ensemble),57.7,48.5,9.2,44.62,,LOSS,0.0,498.68
-2026-08-11 15:16:56,2026-08-11,UEFA CL Qualifying,NK Celje,Ararat-Armenia,Under 2.5,2.48,🎯 Auto (Dual Ensemble),55.1,40.3,14.7,50.0,,WIN,0.0,498.68
-2026-08-11 22:46:12,2026-08-12,Argentina,Talleres (Córdoba),Lanús,Under 2.5,1.49,🎯 Auto (Dual Ensemble),79.7,67.1,12.6,50.0,,LOSS,0.0,498.68
+2026-08-11 15:16:55,2026-08-11,UEFA CL Qualifying,NEC Nijmegen,Olympiacos,Under 2.5,2.06,🎯 Auto (Dual Ensemble),57.7,48.5,9.2,44.62,,LOSS,-44.62,454.06
+2026-08-11 15:16:56,2026-08-11,UEFA CL Qualifying,NK Celje,Ararat-Armenia,Under 2.5,2.48,🎯 Auto (Dual Ensemble),55.1,40.3,14.7,50.0,,WIN,74.0,528.06
+2026-08-11 22:46:12,2026-08-12,Argentina,Talleres (Córdoba),Lanús,Under 2.5,1.49,🎯 Auto (Dual Ensemble),79.7,67.1,12.6,50.0,,LOSS,-50.0,478.06
+2026-08-13 09:16:24,2026-08-13,UEFA ECL Qualifying,FK Qarabag,Dynamo Kyiv,Under 2.5,2.0,🎯 Auto (Dual Ensemble),64.3,50.0,14.3,50.0,,PENDING,0.0,0.0
