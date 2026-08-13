@@ -625,6 +625,14 @@ def render_ml_predictions_tab():
                                 bf_client.fetch_all_live_markets()
                         else:
                             st.warning(f"🟡 Betfair Status: {bf_client.last_status}")
+                            if "BETTING_RESTRICTED_LOCATION" in str(bf_client.last_status):
+                                st.error(
+                                    "🚫 **Betfair Geo-Block Active on Cloud Server**\n\n"
+                                    "Betfair blocks API connections originating from cloud datacenters (Fly.io / AWS / Render).\n\n"
+                                    "💡 **Solutions**:\n"
+                                    "1. **Local Access (Recommended)**: Run the app locally via `run_app.bat` on UK home broadband — live Betfair odds connect 100% natively.\n"
+                                    "2. **Cloud Fallback**: The app automatically uses market consensus bookmaker odds so models and scanning work seamlessly anywhere!"
+                                )
                             with st.expander("🔑 Live Betfair Login & Credentials", expanded=False):
                                 u_in = st.text_input("Betfair Username", value=bf_client.username, key="bf_u")
                                 p_in = st.text_input("Betfair Password", value=bf_client.password, type="password", key="bf_p")
@@ -635,6 +643,7 @@ def render_ml_predictions_tab():
                                     st.rerun()
                     except Exception as e:
                         st.info("🟡 Using Betfair Live Odds Market Mode")
+
 
                 for idx, row in filtered_fix.iterrows():
                     h_team = row['HomeTeam']

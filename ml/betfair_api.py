@@ -167,7 +167,11 @@ class BetfairExchangeClient:
                     return True
                 else:
                     err = res_data.get("error", "LOGIN_FAILED")
-                    self.last_status = err
+                    if err == "BETTING_RESTRICTED_LOCATION":
+                        self.last_status = "BETTING_RESTRICTED_LOCATION (Cloud Datacenter Blocked)"
+                        self.last_error = "Betfair blocks cloud server IP ranges. Run locally via run_app.bat on UK broadband for live Betfair API access."
+                    else:
+                        self.last_status = err
                     logger.error(f"Betfair Standard login failed: {err}")
             else:
                 self.last_status = f"HTTP Error {resp.status_code}"
@@ -176,6 +180,7 @@ class BetfairExchangeClient:
             logger.error(f"Betfair Standard login exception: {e}")
 
         return False
+
 
     def get_headers(self) -> dict:
         if not self.session_token:
