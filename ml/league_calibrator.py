@@ -82,6 +82,8 @@ CALIBRATION_LEAGUES = {
     # Asia
     "Japan":                "JPN",
     "China":                "CHN",
+    "Calcutta Premier Division": "ind.2",
+    "Indian Super League":  "ind.1",
     # Nordic / Eastern Europe
     "Sweden":               "SWE",
     "Norway":               "NOR",

@@ -31,6 +31,7 @@ LEAGUES: Dict[str, Dict[str, str]] = {
     "Austria": {"Bundesliga": "AUT"},
     "Ireland": {"Premier Division": "IRL"},
     "Russia": {"Premier League": "RUS"},
+    "India": {"Calcutta Premier Division": "ind.2", "Indian Super League": "ind.1"},
 }
 
 GLOBAL_LEAGUE_CODES = ["USA", "ARG", "BRA", "MEX", "JPN", "CHN", "SWE", "NOR", "DNK", "FIN", "POL", "ROU", "SWZ", "AUT", "IRL", "RUS"]
