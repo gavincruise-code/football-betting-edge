@@ -46,6 +46,7 @@ except Exception:
         "USA (MLS)": "USA", "Argentina": "ARG", "Brazil": "BRA", "Mexico": "MEX", "Japan": "JPN", "China": "CHN",
         "Sweden": "SWE", "Norway": "NOR", "Denmark": "DNK", "Finland": "FIN", "Poland": "POL", "Romania": "ROU",
         "Switzerland": "SWZ", "Austria": "AUT",
+        "India": "ind.1", "India (Calcutta Premier Division)": "ind.2", "India (Super League)": "ind.1",
         "Calcutta Premier Division": "ind.2", "Indian Super League": "ind.1"
     }
 

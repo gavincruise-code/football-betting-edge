@@ -229,6 +229,7 @@ _LEAGUE_CODE_MAP = {
     'Denmark': 'DNK', 'Finland': 'FIN', 'Poland': 'POL', 'Romania': 'ROU',
     'Switzerland': 'SWZ', 'Austria': 'AUT', 'Ireland': 'IRL', 'Russia': 'RUS',
     'India': 'ind.1', 'Calcutta Premier Division': 'ind.2', 'Indian Super League': 'ind.1',
+    'India (Calcutta Premier Division)': 'ind.2', 'India (Super League)': 'ind.1',
 }
 
 _results_cache: dict = {}
