@@ -369,7 +369,7 @@ def render_ml_predictions_tab():
                     from ml.league_calibrator import (
                         load_calibration_cache, calibrate_all_leagues,
                         get_strategy_for_league, cache_age_hours,
-                        CALIBRATION_LEAGUES,
+                        CALIBRATION_LEAGUES, get_xgb_model_name_for_league,
                     )
                     _cal_cache = load_calibration_cache()
                 except Exception:
@@ -791,10 +791,60 @@ def render_ml_predictions_tab():
 
                             sm = score_matrix(lam_h, lam_a)
                             p_dc = sum(sm[i][j] for i in range(7) for j in range(7) if i + j >= 3)
-                            
-                            h_mom = float(np.nanmean(h_scored[-5:])) - float(np.nanmean(h_scored)) if len(h_scored) >= 5 else 0
-                            a_mom = float(np.nanmean(a_scored[-5:])) - float(np.nanmean(a_scored)) if len(a_scored) >= 5 else 0
-                            p_xgb = float(np.clip(p_dc + 0.08 * (h_mom + a_mom), 0.15, 0.85))
+
+                            # ── Real per-league XGBoost prediction ─────────────────────────
+                            # Build a lightweight feature row for this fixture and run the
+                            # trained league-specific model. Falls back to the momentum proxy
+                            # if no model has been trained yet (calibration not run).
+                            p_xgb = None
+                            try:
+                                from ml.ml_model import load_model, predict_proba as ml_predict_proba
+                                from ml.league_calibrator import get_xgb_model_name_for_league
+                                _xgb_name = get_xgb_model_name_for_league(league_name, _cal_cache)
+                                _xgb_model, _xgb_cal = load_model(_xgb_name)
+                                if _xgb_model is None and _xgb_name != 'xgb_over25_latest':
+                                    _xgb_model, _xgb_cal = load_model('xgb_over25_latest')
+                                if _xgb_model is not None:
+                                    # Build minimal feature DataFrame for this fixture
+                                    h_scored_arr = np.array(h_scored, dtype=float)
+                                    a_scored_arr = np.array(a_scored, dtype=float)
+                                    h_conceded_arr = np.array(h_conceded, dtype=float)
+                                    a_conceded_arr = np.array(a_conceded, dtype=float)
+                                    h_total = h_scored_arr + h_conceded_arr
+                                    a_total = a_scored_arr + a_conceded_arr
+                                    feat_row = {
+                                        'dc_prob': p_dc,
+                                        'goals_scored_avg_H_10': float(np.nanmean(h_scored_arr)),
+                                        'goals_conceded_avg_H_10': float(np.nanmean(h_conceded_arr)),
+                                        'total_goals_avg_H_10': float(np.nanmean(h_total)),
+                                        'over25_rate_H_10': float(np.nanmean(h_total > 2.5)),
+                                        'goals_scored_avg_A_10': float(np.nanmean(a_scored_arr)),
+                                        'goals_conceded_avg_A_10': float(np.nanmean(a_conceded_arr)),
+                                        'total_goals_avg_A_10': float(np.nanmean(a_total)),
+                                        'over25_rate_A_10': float(np.nanmean(a_total > 2.5)),
+                                        'lam_home': lam_h,
+                                        'lam_away': lam_a,
+                                        'implied_prob_over25': implied_probability(o25),
+                                    }
+                                    feat_df_row = pd.DataFrame([feat_row])
+                                    # Align columns to what the model was trained on
+                                    import joblib
+                                    _model_feats = getattr(_xgb_model, 'feature_names_in_', None)
+                                    if _model_feats is not None:
+                                        for _fc in _model_feats:
+                                            if _fc not in feat_df_row.columns:
+                                                feat_df_row[_fc] = 0.0
+                                        feat_df_row = feat_df_row[[_fc for _fc in _model_feats if _fc in feat_df_row.columns]]
+                                    _probs = ml_predict_proba(_xgb_model, feat_df_row, _xgb_cal)
+                                    p_xgb = float(_probs[0])
+                            except Exception:
+                                pass
+
+                            # Fallback: momentum-adjusted proxy if no model loaded
+                            if p_xgb is None:
+                                h_mom = float(np.nanmean(h_scored[-5:])) - float(np.nanmean(h_scored)) if len(h_scored) >= 5 else 0
+                                a_mom = float(np.nanmean(a_scored[-5:])) - float(np.nanmean(a_scored)) if len(a_scored) >= 5 else 0
+                                p_xgb = float(np.clip(p_dc + 0.08 * (h_mom + a_mom), 0.15, 0.85))
 
                             if scanner_model == "🎯 Auto-Optimal (By League)":
                                 effective_strat = st.session_state.get('league_strategy_map', {}).get(league_name, "Dixon-Coles Only" if any(w in league_name for w in ["La", "EPL", "Premier"]) else "Dual Ensemble")

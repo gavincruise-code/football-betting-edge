@@ -166,6 +166,7 @@ def calibrate_all_leagues(
     """
     from data_utils import download_league_data
     from backtester import run_backtest
+    from ml.feature_engine import compute_all_features as build_feature_df
 
     leagues = list(CALIBRATION_LEAGUES.items())
     total = len(leagues)
@@ -215,7 +216,32 @@ def calibrate_all_leagues(
                 "draw_rate_pct":     round(draw_rate * 100, 1),
                 "recommended_min_edge": min_edge,
                 "sample_matches":    len(sample),
+                "xgb_model_name":    None,  # filled in below if training succeeds
             }
+
+            # ── Per-league XGBoost training ──────────────────────────────────
+            # Skip ESPN-only leagues that have no football-data CSV history
+            _espn_only = fd_code.startswith('ind') or fd_code in ('uefa', 'ecl')
+            if not _espn_only and len(completed) >= 200:
+                try:
+                    feature_df = build_feature_df(completed)
+                    if not feature_df.empty and 'over25' in feature_df.columns:
+                        from ml.backtester_v2 import walk_forward_backtest
+                        _safe_code = fd_code.replace('.', '_')
+                        _model_name = f"xgb_{_safe_code}_over25"
+                        walk_forward_backtest(
+                            feature_df,
+                            strategy='dual',
+                            model_name=_model_name,
+                        )
+                        results[league_name]["xgb_model_name"] = _model_name
+                        logger.info("Trained per-league XGBoost model: %s", _model_name)
+                except Exception as xgb_exc:
+                    logger.warning(
+                        "XGBoost training failed for %s (%s): %s",
+                        league_name, fd_code, xgb_exc,
+                    )
+
             logger.info(
                 "Calibrated %-22s → %-22s  ROI %+.1f%%  avg_goals %.2f",
                 league_name, strategy, bt.roi, avg_goals,
@@ -293,3 +319,27 @@ def cache_age_hours(cache: dict | None = None) -> float | None:
         return (datetime.now() - dt).total_seconds() / 3600
     except Exception:
         return None
+
+
+def get_xgb_model_name_for_league(league_name: str, cache: dict | None = None) -> str:
+    """
+    Return the saved per-league XGBoost model name for ``league_name``.
+
+    Falls back to ``xgb_over25_latest`` if no league-specific model has been
+    trained yet (i.e. calibration has not been run or that league failed).
+    """
+    if cache is None:
+        cache = load_calibration_cache()
+
+    league_data = cache.get("leagues", {}).get(league_name, {})
+    model_name = league_data.get("xgb_model_name")
+    if model_name:
+        return model_name
+
+    # Derive from fd_code if present in cache but xgb_model_name not yet set
+    fd_code = league_data.get("fd_code")
+    if fd_code:
+        safe_code = fd_code.replace(".", "_")
+        return f"xgb_{safe_code}_over25"
+
+    return "xgb_over25_latest"

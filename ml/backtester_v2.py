@@ -103,6 +103,7 @@ def walk_forward_backtest(
     kelly_fraction: float = KELLY_FRACTION,
     initial_bankroll: float = 1000.0,
     strategy: str = 'dual',  # 'dc_only', 'ml_only', 'dual', 'random'
+    model_name: str = 'xgb_over25_latest',  # Name to save the trained model under
 ) -> MLBacktestResult:
     """
     Executes walk-forward backtest across seasons.
@@ -191,7 +192,10 @@ def walk_forward_backtest(
         # Save latest trained model for live scanner predictions
         try:
             from ml.ml_model import save_model
-            save_model(xgb_model, "xgb_over25_latest", calibrator)
+            save_model(xgb_model, model_name, calibrator)
+            # Also keep a copy as the generic fallback
+            if model_name != 'xgb_over25_latest':
+                save_model(xgb_model, 'xgb_over25_latest', calibrator)
         except Exception:
             pass
 
