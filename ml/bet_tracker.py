@@ -271,6 +271,7 @@ _ESPN_SLUGS = {
     'Japan': 'jpn.1', 'China': 'chn.1', 'Sweden': 'swe.1', 'Norway': 'nor.1',
     'Denmark': 'dnk.1', 'Finland': 'fin.1', 'Poland': 'pol.1', 'Romania': 'rou.1',
     'Switzerland': 'sui.1', 'Austria': 'aut.1',
+    'Indian Super League': 'ind.1', 'Calcutta Premier Division': 'ind.2', 'India': 'ind.1',
     'UEFA Champions League': 'uefa.champions', 'UEFA CL Qualifying': 'uefa.champions_qual',
     'UEFA Europa League': 'uefa.europa', 'UEFA EL Qualifying': 'uefa.europa_qual',
     'UEFA Conference League': 'uefa.europa.conf', 'UEFA ECL Qualifying': 'uefa.europa.conf_qual',

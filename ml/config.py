@@ -33,6 +33,8 @@ UNDERSTAT_LEAGUES = {
     "Romania": "ROU",
     "Switzerland": "SWZ",
     "Austria": "AUT",
+    "Calcutta Premier Division": "ind.2",
+    "Indian Super League": "ind.1",
 }
 
 # Mapping from league keys to football-data.co.uk league codes

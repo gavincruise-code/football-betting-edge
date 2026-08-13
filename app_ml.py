@@ -45,7 +45,8 @@ except Exception:
         "EPL": "EPL", "La_Liga": "La_Liga", "Bundesliga": "Bundesliga", "Serie_A": "Serie_A", "Ligue_1": "Ligue_1",
         "USA (MLS)": "USA", "Argentina": "ARG", "Brazil": "BRA", "Mexico": "MEX", "Japan": "JPN", "China": "CHN",
         "Sweden": "SWE", "Norway": "NOR", "Denmark": "DNK", "Finland": "FIN", "Poland": "POL", "Romania": "ROU",
-        "Switzerland": "SWZ", "Austria": "AUT"
+        "Switzerland": "SWZ", "Austria": "AUT",
+        "Calcutta Premier Division": "ind.2", "Indian Super League": "ind.1"
     }
 
 try:
