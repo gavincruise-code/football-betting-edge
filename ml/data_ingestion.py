@@ -393,9 +393,9 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
                         'Time':          ev_date.strftime('%H:%M'),
                         'HomeTeam':      h_name,
                         'AwayTeam':      a_name,
-                        'over25_odds':   1.85,
-                        'under25_odds':  1.95,
-                        'draw_odds':     3.40,
+                        'over25_odds':   np.nan,   # No real odds from ESPN — will be filled by Betfair or suppressed
+                        'under25_odds':  np.nan,
+                        'draw_odds':     np.nan,
                     })
             except Exception:
                 continue

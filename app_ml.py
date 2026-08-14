@@ -310,6 +310,10 @@ def render_ml_predictions_tab():
 
                         if not fix_df.empty:
                             st.session_state['live_fixtures_df'] = fix_df
+                            # Fix #5: Clear history cache so form data refreshes on new fetch
+                            st.session_state.pop('league_history_cache', None)
+                            st.session_state.pop('master_cross_league_df', None)
+                            st.session_state.pop('xgb_model_cache', None)
                             st.success(f"Fetched {len(fix_df)} live upcoming fixtures with live Betfair Exchange odds!")
                         else:
                             st.warning("No unplayed upcoming fixtures found in current feed.")
@@ -343,6 +347,20 @@ def render_ml_predictions_tab():
                     edge_filter = st.slider("Min Edge %", 1, 15, 5, 1) / 100.0
                 with f_col5:
                     val_only = st.checkbox("Show +EV Only", value=False)
+
+                # Fix #4: User bankroll input for correct Kelly stake sizing
+                with st.sidebar:
+                    st.divider()
+                    st.subheader("💰 Bankroll Settings")
+                    user_bankroll = st.number_input(
+                        "My Current Bankroll (£)",
+                        min_value=100.0, max_value=1_000_000.0,
+                        value=float(st.session_state.get('user_bankroll', 1000.0)),
+                        step=100.0, format="%.0f",
+                        help="Quarter-Kelly stake recommendations scale with your actual bankroll.",
+                        key="bankroll_input"
+                    )
+                    st.session_state['user_bankroll'] = user_bankroll
 
                 filtered_fix = fix_df.copy()
 
@@ -656,18 +674,28 @@ def render_ml_predictions_tab():
                     raw_o25 = row.get('over25_odds', np.nan)
                     raw_u25 = row.get('under25_odds', np.nan)
 
+                    # Fix #1: Resolve real odds — NaN when no market exists (suppresses false edges)
                     try:
                         bf_odds = bf_client.fetch_market_odds(h_team, a_team)
                         bf_raw_o = bf_odds.get('over25_odds')
                         bf_raw_u = bf_odds.get('under25_odds')
-                        init_o25 = float(bf_raw_o) if pd.notna(bf_raw_o) and float(bf_raw_o) > 1.0 else (float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00)
-                        init_u25 = float(bf_raw_u) if pd.notna(bf_raw_u) and float(bf_raw_u) > 1.0 else (float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80)
+                        bf_is_real = bf_odds.get('source') != 'no_live_odds'
+                        # Prefer Betfair live price, fall back to feed CSV odds, else NaN
+                        init_o25 = float(bf_raw_o) if (bf_is_real and pd.notna(bf_raw_o) and float(bf_raw_o) > 1.0) else (float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else float('nan'))
+                        init_u25 = float(bf_raw_u) if (bf_is_real and pd.notna(bf_raw_u) and float(bf_raw_u) > 1.0) else (float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else float('nan'))
                     except Exception:
-                        init_o25 = float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else 2.00
-                        init_u25 = float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else 1.80
+                        init_o25 = float(raw_o25) if pd.notna(raw_o25) and float(raw_o25) > 1.0 else float('nan')
+                        init_u25 = float(raw_u25) if pd.notna(raw_u25) and float(raw_u25) > 1.0 else float('nan')
 
                     o25 = init_o25
                     u25 = init_u25
+                    has_live_odds = pd.notna(o25) and o25 > 1.0
+
+                    # Fix #8: Overround sanity check — suppress thin/stale markets (>15% margin)
+                    if has_live_odds and pd.notna(u25) and u25 > 1.0:
+                        overround = (1.0 / o25) + (1.0 / u25)
+                        if overround > 1.15:
+                            has_live_odds = False  # Market is distorted — treat as no-odds
 
                     league_name = row.get('league', 'Unknown')
                     if scanner_model == "🎯 Auto-Optimal (By League)":
@@ -746,6 +774,10 @@ def render_ml_predictions_tab():
 
                     model_prob_o25 = np.nan
                     has_data = False
+                    # Fix #2: Initialise these before the data block to avoid NameError on no-data fixtures
+                    val_o25 = False
+                    val_u25 = False
+                    is_val = False
 
                     if search_df is not None and not search_df.empty:
                         import difflib
@@ -801,9 +833,15 @@ def render_ml_predictions_tab():
                                 from ml.ml_model import load_model, predict_proba as ml_predict_proba
                                 from ml.league_calibrator import get_xgb_model_name_for_league
                                 _xgb_name = get_xgb_model_name_for_league(league_name, _cal_cache)
-                                _xgb_model, _xgb_cal = load_model(_xgb_name)
-                                if _xgb_model is None and _xgb_name != 'xgb_over25_latest':
-                                    _xgb_model, _xgb_cal = load_model('xgb_over25_latest')
+                                # Fix #6: Cache models in session_state — load each .joblib once per session
+                                if 'xgb_model_cache' not in st.session_state:
+                                    st.session_state['xgb_model_cache'] = {}
+                                if _xgb_name not in st.session_state['xgb_model_cache']:
+                                    _m, _c = load_model(_xgb_name)
+                                    if _m is None and _xgb_name != 'xgb_over25_latest':
+                                        _m, _c = load_model('xgb_over25_latest')
+                                    st.session_state['xgb_model_cache'][_xgb_name] = (_m, _c)
+                                _xgb_model, _xgb_cal = st.session_state['xgb_model_cache'][_xgb_name]
                                 if _xgb_model is not None:
                                     # Build minimal feature DataFrame for this fixture
                                     h_scored_arr = np.array(h_scored, dtype=float)
@@ -846,10 +884,7 @@ def render_ml_predictions_tab():
                                 a_mom = float(np.nanmean(a_scored[-5:])) - float(np.nanmean(a_scored)) if len(a_scored) >= 5 else 0
                                 p_xgb = float(np.clip(p_dc + 0.08 * (h_mom + a_mom), 0.15, 0.85))
 
-                            if scanner_model == "🎯 Auto-Optimal (By League)":
-                                effective_strat = st.session_state.get('league_strategy_map', {}).get(league_name, "Dixon-Coles Only" if any(w in league_name for w in ["La", "EPL", "Premier"]) else "Dual Ensemble")
-                            else:
-                                effective_strat = scanner_model
+                            # Fix #3: Use the calibrated effective_strat from lines 673-684 — do NOT overwrite it here
 
                             if effective_strat == "Dixon-Coles Only":
                                 model_prob_o25 = p_dc
@@ -858,16 +893,17 @@ def render_ml_predictions_tab():
                             else:  # Dual Ensemble
                                 model_prob_o25 = 0.5 * p_dc + 0.5 * p_xgb
                     
-                    if has_data and pd.notna(model_prob_o25):
+                    # Fix #1: Only compute edge when real live odds exist
+                    if has_data and pd.notna(model_prob_o25) and has_live_odds:
                         model_prob_u25 = 1.0 - model_prob_o25
-                        imp_o25 = implied_probability(o25) if pd.notna(o25) and o25 > 1.0 else 0.5
-                        imp_u25 = implied_probability(u25) if pd.notna(u25) and u25 > 1.0 else 0.5
+                        imp_o25 = implied_probability(o25) if pd.notna(o25) and o25 > 1.0 else np.nan
+                        imp_u25 = implied_probability(u25) if pd.notna(u25) and u25 > 1.0 else np.nan
 
-                        edge_o25 = model_prob_o25 - imp_o25
-                        edge_u25 = model_prob_u25 - imp_u25
+                        edge_o25 = (model_prob_o25 - imp_o25) if pd.notna(imp_o25) else np.nan
+                        edge_u25 = (model_prob_u25 - imp_u25) if pd.notna(imp_u25) else np.nan
 
-                        val_o25 = edge_o25 >= edge_filter
-                        val_u25 = edge_u25 >= edge_filter
+                        val_o25 = pd.notna(edge_o25) and edge_o25 >= edge_filter
+                        val_u25 = pd.notna(edge_u25) and edge_u25 >= edge_filter
                         is_val = val_o25 or val_u25
 
                         if val_o25 and val_u25:
@@ -895,19 +931,21 @@ def render_ml_predictions_tab():
                             best_prob = model_prob_o25 if edge_o25 >= edge_u25 else model_prob_u25
                             best_imp = imp_o25 if edge_o25 >= edge_u25 else imp_u25
 
-                        rec_k_stake = kelly_stake(best_prob, best_odds, 1000.0) if pd.notna(best_odds) and best_odds > 1 else 10.0
+                        # Fix #4: Use user-specified bankroll for Kelly stake sizing
+                        rec_k_stake = kelly_stake(best_prob, best_odds, user_bankroll) if pd.notna(best_odds) and best_odds > 1 else 10.0
                     else:
-                        model_prob_o25 = np.nan
-                        model_prob_u25 = np.nan
-                        edge_o25 = 0.0
-                        edge_u25 = 0.0
+                        model_prob_u25 = 1.0 - model_prob_o25 if pd.notna(model_prob_o25) else np.nan
+                        edge_o25 = np.nan
+                        edge_u25 = np.nan
                         is_val = False
                         best_market = "Over 2.5"
-                        best_edge = -0.99
-                        best_odds = o25
-                        best_prob = np.nan
-                        best_imp = implied_probability(o25) if pd.notna(o25) and o25 > 1.0 else 0.5
+                        best_edge = np.nan
+                        best_odds = o25 if has_live_odds else np.nan
+                        best_prob = model_prob_o25
+                        best_imp = implied_probability(o25) if has_live_odds and pd.notna(o25) else np.nan
                         rec_k_stake = 0.0
+                        # Distinguish: has model data but no live odds vs truly no team data
+                        has_no_odds = has_data and not has_live_odds
 
                     if val_only and not is_val:
                         continue
@@ -929,6 +967,9 @@ def render_ml_predictions_tab():
                         'val_o25': val_o25,
                         'val_u25': val_u25,
                         'is_val': is_val,
+                        'has_data': has_data,
+                        'has_live_odds': has_live_odds,
+                        'has_no_odds': locals().get('has_no_odds', False),
                         'best_market': best_market,
                         'best_edge': best_edge,
                         'best_odds': best_odds,
@@ -956,18 +997,24 @@ def render_ml_predictions_tab():
                     m_time = item['m_time']
                     is_val = item['is_val']
                     has_data = item.get('has_data', True)
+                    has_no_odds = item.get('has_no_odds', False)
                     best_market = item['best_market']
                     best_edge = item['best_edge']
                     best_odds = item['best_odds']
                     best_prob = item['best_prob']
                     best_imp = item['best_imp']
                     rec_k_stake = item['rec_k_stake']
-                    
+
                     if not has_data:
                         card_border = "1px dashed #ffbb00"
                         card_bg = "rgba(255, 187, 0, 0.04)"
                         status_badge = '<span style="font-size: 1.05rem; font-weight: bold; color: #ffbb00;">⚠️ INSUFFICIENT DATA</span>'
                         sub_label = '<span style="color: #ffbb00; font-weight: 600; font-size: 0.88rem;">⚠️ Not possible to make a model judgement (insufficient team history)</span>'
+                    elif has_no_odds:
+                        card_border = "1px dashed #4ea8de"
+                        card_bg = "rgba(78, 168, 222, 0.04)"
+                        status_badge = '<span style="font-size: 1.05rem; font-weight: bold; color: #4ea8de;">🔵 NO LIVE ODDS</span>'
+                        sub_label = f'<span style="color: #4ea8de; font-weight: 600; font-size: 0.88rem;">Model probability: {best_prob*100:.1f}% — Awaiting live market odds (connect Betfair)</span>' if pd.notna(best_prob) else '<span style="color: #4ea8de;">Awaiting live market odds</span>'
                     elif is_val:
                         card_border = "3px solid #00d4aa"
                         card_bg = "rgba(0, 212, 170, 0.05)"
@@ -995,15 +1042,17 @@ def render_ml_predictions_tab():
                     """, unsafe_allow_html=True)
 
                     fc1, fc2, fc3, fc4, fc5, fc6 = st.columns([1, 1, 1, 1.1, 1.3, 1.2])
-                    fc1.metric("Betfair Odds", f"{best_odds:.2f}" if pd.notna(best_odds) else "N/A")
-                    fc2.metric("Implied Prob", f"{best_imp*100:.1f}%" if pd.notna(best_imp) else "N/A")
+                    fc1.metric("Betfair Odds", f"{best_odds:.2f}" if pd.notna(best_odds) else "No Live Odds")
+                    fc2.metric("Implied Prob", f"{best_imp*100:.1f}%" if pd.notna(best_imp) else "—")
                     fc3.metric("Model Prob", f"{best_prob*100:.1f}%" if (has_data and pd.notna(best_prob)) else "N/A (No Data)")
-                    fc4.metric(f"Edge % ({best_market})", f"{best_edge*100:+.1f}%" if (has_data and pd.notna(best_edge)) else "N/A", delta=f"{best_edge*100:+.1f}%" if (has_data and is_val) else None)
-                    fc5.metric("Quarter-Kelly Stake", f"£{rec_k_stake:.2f}" if (has_data and is_val) else "N/A")
+                    fc4.metric(f"Edge % ({best_market})", f"{best_edge*100:+.1f}%" if (has_data and pd.notna(best_edge) and not has_no_odds) else "—", delta=f"{best_edge*100:+.1f}%" if (has_data and is_val) else None)
+                    fc5.metric("Quarter-Kelly Stake", f"£{rec_k_stake:.2f}" if (has_data and is_val) else "—")
 
                     with fc6:
                         if not has_data:
                             st.info("⚠️ Data Unavailable")
+                        elif has_no_odds:
+                            st.info("🔵 Awaiting Odds")
                         else:
                             already_logged = is_bet_recorded(h_team, a_team, best_market)
                             if already_logged:

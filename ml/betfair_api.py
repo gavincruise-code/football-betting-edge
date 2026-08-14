@@ -338,9 +338,9 @@ class BetfairExchangeClient:
                 return data
 
         return {
-            "source": "Betfair Exchange",
-            "over25_odds": 2.00,
-            "under25_odds": 1.80
+            "source": "no_live_odds",
+            "over25_odds": float('nan'),
+            "under25_odds": float('nan'),
         }
 
 # Global Singleton Instance
