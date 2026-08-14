@@ -694,10 +694,28 @@ def render_ml_predictions_tab():
 
                     o25 = init_o25
                     u25 = init_u25
-                    has_live_odds = pd.notna(o25) and o25 > 1.0
 
-                    # Fix #8: Overround sanity check — suppress thin/stale markets (>15% margin)
-                    if has_live_odds and pd.notna(u25) and u25 > 1.0:
+                    # has_live_odds: true if EITHER side of the market is present
+                    has_o25 = pd.notna(o25) and o25 > 1.0
+                    has_u25 = pd.notna(u25) and u25 > 1.0
+                    has_live_odds = has_o25 or has_u25
+
+                    # Derive the missing side from the available one
+                    # (assumes a ~103% book, typical for Betfair over/under markets)
+                    if has_live_odds and not has_o25 and has_u25:
+                        # Only u25 present: imply o25 from it
+                        impl_under = 1.0 / u25
+                        impl_over  = max(1.03 - impl_under, 0.05)
+                        o25 = round(1.0 / impl_over, 3)
+                    elif has_live_odds and has_o25 and not has_u25:
+                        # Only o25 present: imply u25 from it
+                        impl_over  = 1.0 / o25
+                        impl_under = max(1.03 - impl_over, 0.05)
+                        u25 = round(1.0 / impl_under, 3)
+
+                    # Fix #8: Overround sanity check — only when both sides present
+                    # Suppress thin/stale markets with > 15% margin
+                    if has_live_odds and pd.notna(o25) and o25 > 1.0 and pd.notna(u25) and u25 > 1.0:
                         overround = (1.0 / o25) + (1.0 / u25)
                         if overround > 1.15:
                             has_live_odds = False  # Market is distorted — treat as no-odds
