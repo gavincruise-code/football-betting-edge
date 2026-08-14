@@ -439,6 +439,92 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
     except Exception as e:
         logger.warning(f"Failed to fetch ESPN scoreboard: {e}")
 
+    # ── Source 4: API-Football upcoming fixtures (leagues ESPN misses) ─────────
+    # Covers Scandinavia, Eastern Europe, and other leagues where ESPN returns 0.
+    # Only runs if API_FOOTBALL_KEY is configured.
+    try:
+        import os, requests as _req
+        _api_key = os.getenv("API_FOOTBALL_KEY", "")
+        if _api_key:
+            from ml.api_football_client import LEAGUE_ID_MAP
+            # ESPN slugs that reliably provide fixtures (skip these to avoid duplication)
+            _espn_covered = {
+                'EPL', 'Championship', 'League 1', 'League 2', 'Conference',
+                'Scottish Premiership', 'Scottish Championship',
+                'La_Liga', 'Segunda Division', 'Bundesliga', 'Bundesliga 2',
+                'Serie_A', 'Serie B', 'Ligue_1', 'Ligue 2',
+                'Eredivisie', 'Belgium', 'Liga Portugal', 'Super Lig',
+                'Super League Greece',
+                'USA (MLS)', 'Argentina', 'Brazil', 'Mexico',
+                'China', 'Japan', 'South Korea', 'Saudi Arabia',
+                'Colombia', 'Chile', 'Uruguay', 'Ecuador', 'Peru',
+                'Egypt', 'Morocco', 'South Africa', 'Australia',
+                'India', 'Thailand',
+                'UEFA Champions League', 'UEFA CL Qualifying',
+                'UEFA Europa League', 'UEFA EL Qualifying',
+                'UEFA Conference League', 'UEFA ECL Qualifying',
+            }
+            _api_headers = {"x-apisports-key": _api_key}
+            _apif_rows = []
+            today_str   = today.strftime('%Y-%m-%d')
+            max_str     = max_date.strftime('%Y-%m-%d')
+
+            for lg_name, lg_id in LEAGUE_ID_MAP.items():
+                if lg_name in _espn_covered:
+                    continue  # already covered by Source 3
+                try:
+                    resp = _req.get(
+                        "https://v3.football.api-sports.io/fixtures",
+                        headers=_api_headers,
+                        params={
+                            "league": lg_id,
+                            "from": today_str,
+                            "to": max_str,
+                            "status": "NS",          # Not Started
+                            "timezone": "Europe/London",  # API returns in UK local time
+                        },
+                        timeout=8,
+                    )
+                    if resp.status_code != 200:
+                        continue
+                    for fix in resp.json().get("response", []):
+                        try:
+                            ft = fix.get("fixture", {})
+                            teams = fix.get("teams", {})
+                            raw_dt = ft.get("date", "")
+                            ev_date = pd.to_datetime(raw_dt, errors='coerce')
+                            if pd.isnull(ev_date):
+                                continue
+                            # API already returns in Europe/London — strip tz label
+                            if ev_date.tzinfo is not None:
+                                ev_date = ev_date.tz_localize(None)
+                            if not (today <= ev_date.normalize() <= max_date):
+                                continue
+                            h = teams.get("home", {}).get("name", "")
+                            a = teams.get("away", {}).get("name", "")
+                            if not h or not a:
+                                continue
+                            _apif_rows.append({
+                                "league":       lg_name,
+                                "Date":         ev_date.normalize(),
+                                "Time":         ev_date.strftime("%H:%M"),
+                                "HomeTeam":     h,
+                                "AwayTeam":     a,
+                                "over25_odds":  float("nan"),
+                                "under25_odds": float("nan"),
+                                "draw_odds":    float("nan"),
+                            })
+                        except Exception:
+                            continue
+                except Exception as e_lg:
+                    logger.debug("API-Football fixture fetch failed for %s: %s", lg_name, e_lg)
+
+            if _apif_rows:
+                all_upcoming.append(pd.DataFrame(_apif_rows))
+                logger.info("API-Football Source 4: %d upcoming fixtures added", len(_apif_rows))
+    except Exception as e:
+        logger.warning(f"Failed to fetch API-Football upcoming fixtures: {e}")
+
     # ── Combine, deduplicate, sort ─────────────────────────────────────────────
     if not all_upcoming:
         return pd.DataFrame()
