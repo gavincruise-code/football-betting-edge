@@ -1148,7 +1148,7 @@ def render_ml_predictions_tab():
                         card_border = "1px dashed #4ea8de"
                         card_bg = "rgba(78, 168, 222, 0.04)"
                         status_badge = '<div style="font-size: 1.05rem; font-weight: bold; color: #4ea8de;">&#x1F535; NO LIVE ODDS</div>'
-                        sub_label = (f'<div style="color: #4ea8de; font-weight: 600; font-size: 0.88rem; margin-top: 4px;">Model probability: {best_prob*100:.1f}% &#8212; Awaiting live market odds</div>' if pd.notna(best_prob) else '<div style="color: #4ea8de; margin-top:4px;">Awaiting live market odds</div>')
+                        sub_label = (f'<div style="color: #4ea8de; font-weight: 600; font-size: 0.88rem; margin-top: 4px;">Model probability {best_market}: {best_prob*100:.1f}% &#8212; Awaiting live market odds</div>' if pd.notna(best_prob) else '<div style="color: #4ea8de; margin-top:4px;">Awaiting live market odds</div>')
                     elif is_val:
                         card_border = "3px solid #00d4aa"
                         card_bg = "rgba(0, 212, 170, 0.05)"
