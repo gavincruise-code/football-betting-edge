@@ -368,6 +368,7 @@ def render_ml_predictions_tab():
                     st.session_state['user_bankroll'] = user_bankroll
 
                 filtered_fix = fix_df.copy()
+                n_fetched = len(filtered_fix)
 
                 # Filter by Date Window
                 today_dt = pd.Timestamp.now().normalize()
@@ -383,9 +384,41 @@ def render_ml_predictions_tab():
                 elif date_window == "Next 7 Days":
                     max_dt = today_dt + pd.Timedelta(days=7)
                     filtered_fix = filtered_fix[filtered_fix['Date'] <= max_dt]
+                n_after_date = len(filtered_fix)
 
                 if sel_league != "All Leagues":
                     filtered_fix = filtered_fix[filtered_fix['league'] == sel_league]
+                n_after_league = len(filtered_fix)
+
+                # Count kicked-off (for display only — actual skip happens in loop)
+                now_ts = pd.Timestamp.now()
+                def _has_real_time(row):
+                    t = str(row.get('Time', '')).strip()
+                    return bool(t) and t not in ('00:00', 'nan', 'None', '')
+                n_kicked_off = sum(
+                    1 for _, r in filtered_fix.iterrows()
+                    if _has_real_time(r) and (
+                        r['Date'].replace(
+                            hour=int(str(r.get('Time','00:00')).split(':')[0]),
+                            minute=int(str(r.get('Time','00:00')).split(':')[1])
+                        ) if ':' in str(r.get('Time','')) else r['Date']
+                    ) < now_ts
+                )
+                n_after_kickoff = n_after_league - n_kicked_off
+
+                # Show breakdown
+                with st.expander(f"📊 Fixture Filter Breakdown — {n_fetched} fetched → showing ~{n_after_kickoff}", expanded=False):
+                    st.markdown(f"""
+| Stage | Count | Dropped |
+|---|---|---|
+| 📥 Raw feed (all sources) | **{n_fetched}** | — |
+| 📅 After date window (*{date_window}*) | **{n_after_date}** | {n_fetched - n_after_date} |
+| 🏆 After league filter (*{sel_league}*) | **{n_after_league}** | {n_after_date - n_after_league} |
+| ⏰ After kickoff filter (already started) | **{n_after_kickoff}** | {n_kicked_off} |
+| 📈 Insufficient team history | *(evaluated per fixture)* | — |
+| ✅ +EV filter active | **{"Yes — value bets only" if val_only else "No — showing all"}** | — |
+                    """)
+
 
                 # ── Auto-Optimal League Strategy Expander ──────────────────────────────
                 try:
