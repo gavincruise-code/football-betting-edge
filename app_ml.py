@@ -792,6 +792,8 @@ def render_ml_predictions_tab():
                 # ── Debug counters — reset before loop ────────────────────────────
                 _dbg_no_league  = 0  # dropped: no valid league
                 _dbg_kicked_off = 0  # dropped: already kicked off
+                _dbg_no_league_list  = []  # (HomeTeam, AwayTeam, raw_league)
+                _dbg_kicked_off_list = []  # (HomeTeam, AwayTeam, time_str)
 
                 for idx, row in filtered_fix.iterrows():
                     h_team = row['HomeTeam']
@@ -806,6 +808,11 @@ def render_ml_predictions_tab():
                     _row_league = str(row.get('league', '') or '').strip()
                     if not _row_league or _row_league in ('nan', 'Unknown', 'None'):
                         _dbg_no_league += 1
+                        _dbg_no_league_list.append((
+                            str(h_team), str(a_team),
+                            repr(row.get('league', '<missing>')),
+                            m_date
+                        ))
                         continue
 
                     # Skip fixtures that have already kicked off.
@@ -816,6 +823,9 @@ def render_ml_predictions_tab():
                     _has_real_time = bool(_time_str) and _time_str not in ('00:00', 'nan', 'None', '')
                     if _has_real_time and sort_dt < pd.Timestamp.now():
                         _dbg_kicked_off += 1
+                        _dbg_kicked_off_list.append((
+                            str(h_team), str(a_team), _time_str, m_date
+                        ))
                         continue
 
                     # Fix #1: Resolve real odds — NaN when no market exists (suppresses false edges)
@@ -1270,6 +1280,24 @@ def render_ml_predictions_tab():
 | — &nbsp; of which: No edge detected | **{_dbg_no_ev}** | Model edge below {edge_filter*100:.0f}% threshold |
 | — &nbsp; of which: **+EV Opportunities** | **{opportunities_found}** | Edge ≥ {edge_filter*100:.0f}% with live odds |
                     """)
+
+                    if _dbg_no_league_list:
+                        st.markdown("**🚫 Fixtures dropped — no valid league:**")
+                        no_lg_df = pd.DataFrame(
+                            _dbg_no_league_list,
+                            columns=["Home", "Away", "Raw league value", "Date"]
+                        )
+                        st.dataframe(no_lg_df, use_container_width=True, hide_index=True)
+                    else:
+                        st.success("✅ No fixtures dropped for missing league.")
+
+                    if _dbg_kicked_off_list:
+                        with st.expander(f"⏰ {_dbg_kicked_off} fixtures already kicked off (click to expand)", expanded=False):
+                            ko_df = pd.DataFrame(
+                                _dbg_kicked_off_list,
+                                columns=["Home", "Away", "KO Time (BST)", "Date"]
+                            )
+                            st.dataframe(ko_df, use_container_width=True, hide_index=True)
 
                 # Render Sorted Fixture Cards
                 for item in evaluated_fixtures:
