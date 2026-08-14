@@ -718,34 +718,43 @@ def render_ml_predictions_tab():
 
                     lg_df = st.session_state['league_history_cache'].get(league_name, None)
                     if lg_df is None:
+                        # ── Step 1: Try football-data.co.uk (free, no API key) ──────────
                         try:
                             from data_utils import download_league_data
+                            from dotenv import load_dotenv
+                            load_dotenv()
+                            # Only codes that actually exist on football-data.co.uk
                             code_reverse = {
-                                'EPL': 'E0', 'Premier League': 'E0', 'Championship': 'E1', 'League 1': 'E2', 'League 2': 'E3',
+                                'EPL': 'E0', 'Premier League': 'E0', 'Championship': 'E1',
+                                'League 1': 'E2', 'League 2': 'E3', 'Conference': 'EC',
                                 'La_Liga': 'SP1', 'La Liga': 'SP1', 'Segunda Division': 'SP2',
                                 'Bundesliga': 'D1', 'Bundesliga 2': 'D2',
                                 'Serie_A': 'I1', 'Serie A': 'I1', 'Serie B': 'I2',
                                 'Ligue_1': 'F1', 'Ligue 1': 'F1', 'Ligue 2': 'F2',
                                 'Scottish Premiership': 'SC0', 'Scottish Championship': 'SC1',
+                                'Scottish League 1': 'SC2', 'Scottish League 2': 'SC3',
                                 'Netherlands': 'N1', 'Eredivisie': 'N1',
                                 'Belgium': 'B1', 'Pro League': 'B1', 'Jupiler Pro League': 'B1',
                                 'Portugal': 'P1', 'Liga Portugal': 'P1',
-                                'Turkey': 'T1', 'Super Lig': 'T1', '1. Lig': 'T2', 'Turkish 1. Lig': 'T2',
+                                'Turkey': 'T1', 'Super Lig': 'T1',
                                 'Greece': 'G1', 'Super League': 'G1',
-                                'USA (MLS)': 'USA', 'USA': 'USA',
-                                'Argentina': 'ARG', 'Brazil': 'BRA', 'Mexico': 'MEX',
-                                'Japan': 'JPN', 'China': 'CHN', 'Sweden': 'SWE', 'Norway': 'NOR',
-                                'Denmark': 'DNK', 'Finland': 'FIN', 'Poland': 'POL', 'Romania': 'ROU',
-                                'Switzerland': 'SWZ', 'Austria': 'AUT', 'Ireland': 'IRL', 'Russia': 'RUS'
                             }
-                            l_code = code_reverse.get(league_name, None)
-                            if l_code:
-                                lg_df = download_league_data(l_code)
-                            else:
-                                lg_df = pd.DataFrame()
-                            st.session_state['league_history_cache'][league_name] = lg_df
+                            l_code = code_reverse.get(league_name)
+                            lg_df = download_league_data(l_code) if l_code else pd.DataFrame()
                         except Exception:
                             lg_df = pd.DataFrame()
+
+                        # ── Step 2: Fall back to API-Football for everything else ────────
+                        if lg_df.empty:
+                            try:
+                                from ml.api_football_client import fetch_league_history, get_league_id
+                                if get_league_id(league_name) is not None:
+                                    lg_df = fetch_league_history(league_name, min_matches=50)
+                            except Exception:
+                                lg_df = pd.DataFrame()
+
+                        st.session_state['league_history_cache'][league_name] = lg_df
+
 
                     # Build or load Master Cross-League Dataset for UEFA & Inter-League Team Lookups
                     if 'master_cross_league_df' not in st.session_state or st.session_state['master_cross_league_df'].empty:
@@ -770,8 +779,11 @@ def render_ml_predictions_tab():
                         except Exception:
                             st.session_state['master_cross_league_df'] = pd.DataFrame()
 
-                    # Fallback to Master Dataset if league_df is empty or fixture is UEFA / International
-                    search_df = lg_df if (lg_df is not None and not lg_df.empty and 'UEFA' not in league_name) else st.session_state.get('master_cross_league_df', pd.DataFrame())
+                    # CRITICAL: Only use the league's own data.
+                    # The former cross-league fallback was silently running Chinese/Japanese teams
+                    # against European data and producing completely spurious model outputs.
+                    # If lg_df is empty → the fixture will correctly show "Insufficient Data".
+                    search_df = lg_df if (lg_df is not None and not lg_df.empty) else pd.DataFrame()
 
                     model_prob_o25 = np.nan
                     has_data = False
@@ -1107,39 +1119,46 @@ def render_ml_predictions_tab():
                     if not has_data:
                         card_border = "1px dashed #ffbb00"
                         card_bg = "rgba(255, 187, 0, 0.04)"
-                        status_badge = '<span style="font-size: 1.05rem; font-weight: bold; color: #ffbb00;">⚠️ INSUFFICIENT DATA</span>'
-                        sub_label = '<span style="color: #ffbb00; font-weight: 600; font-size: 0.88rem;">⚠️ Not possible to make a model judgement (insufficient team history)</span>'
+                        status_badge = '<div style="font-size: 1.05rem; font-weight: bold; color: #ffbb00;">&#x26A0;&#xFE0F; INSUFFICIENT DATA</div>'
+                        sub_label = '<div style="color: #ffbb00; font-weight: 600; font-size: 0.88rem; margin-top: 4px;">&#x26A0;&#xFE0F; Not possible to make a model judgement (insufficient team history)</div>'
                     elif has_no_odds:
                         card_border = "1px dashed #4ea8de"
                         card_bg = "rgba(78, 168, 222, 0.04)"
-                        status_badge = '<span style="font-size: 1.05rem; font-weight: bold; color: #4ea8de;">🔵 NO LIVE ODDS</span>'
-                        sub_label = f'<span style="color: #4ea8de; font-weight: 600; font-size: 0.88rem;">Model probability: {best_prob*100:.1f}% — Awaiting live market odds (connect Betfair)</span>' if pd.notna(best_prob) else '<span style="color: #4ea8de;">Awaiting live market odds</span>'
+                        status_badge = '<div style="font-size: 1.05rem; font-weight: bold; color: #4ea8de;">&#x1F535; NO LIVE ODDS</div>'
+                        sub_label = (f'<div style="color: #4ea8de; font-weight: 600; font-size: 0.88rem; margin-top: 4px;">Model probability: {best_prob*100:.1f}% &#8212; Awaiting live market odds</div>' if pd.notna(best_prob) else '<div style="color: #4ea8de; margin-top:4px;">Awaiting live market odds</div>')
                     elif is_val:
                         card_border = "3px solid #00d4aa"
                         card_bg = "rgba(0, 212, 170, 0.05)"
-                        status_badge = f'<span style="font-size: 1.2rem; font-weight: bold; color: #00d4aa;">✅ +EV OPPORTUNITY ({best_market})</span>'
-                        sub_label = f'<span style="color: #00d4aa; font-weight: 600; font-size: 0.95rem;">Recommended Bet: {best_market} Goals</span>'
+                        status_badge = f'<div style="font-size: 1.2rem; font-weight: bold; color: #00d4aa;">&#x2705; +EV OPPORTUNITY ({best_market})</div>'
+                        sub_label = f'<div style="color: #00d4aa; font-weight: 600; font-size: 0.95rem; margin-top: 4px;">Recommended Bet: {best_market} Goals</div>'
                     else:
                         card_border = "1px solid rgba(255,255,255,0.1)"
                         card_bg = "rgba(255,255,255,0.02)"
-                        status_badge = '<span style="font-size: 1.2rem; font-weight: bold; color: #ff4b4b;">❌ NO VALUE</span>'
-                        sub_label = f'<span style="color: #888; font-weight: 600; font-size: 0.95rem;">Evaluated Market: {best_market} Goals</span>'
+                        status_badge = '<div style="font-size: 1.2rem; font-weight: bold; color: #ff4b4b;">&#x274C; NO VALUE</div>'
+                        sub_label = f'<div style="color: #888; font-weight: 600; font-size: 0.95rem; margin-top: 4px;">Evaluated Market: {best_market} Goals</div>'
 
-                    st.markdown(f"""
-                    <div style="background: {card_bg}; padding: 15px; margin-bottom: 12px; border-radius: 8px; border: {card_border};">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span style="color: #888; font-size: 0.85rem;">{row['league']} • <b>{m_date} {m_time}</b> • Strategy: <b>{item.get('effective_strat', scanner_model)}</b></span>
-                                <h4 style="margin: 4px 0;">{h_team} vs {a_team}</h4>
-                                {fuzzy_warning}
-                                {sub_label}
-                            </div>
-                            <div style="text-align: right;">
-                                {status_badge}
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    # Build the full HTML card as a single string first to avoid
+                    # Python-Markdown escaping inline elements after block elements (h4)
+                    _league_safe = str(row['league']).replace('&', '&amp;').replace('<', '&lt;')
+                    _ht_safe = str(h_team).replace('&', '&amp;').replace('<', '&lt;')
+                    _at_safe = str(a_team).replace('&', '&amp;').replace('<', '&lt;')
+                    _strat_safe = str(item.get('effective_strat', scanner_model)).replace('&', '&amp;').replace('<', '&lt;')
+                    _card_html = (
+                        f'<div style="background:{card_bg};padding:15px;margin-bottom:12px;border-radius:8px;border:{card_border}">'
+                        f'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+                        f'<div style="flex:1">'
+                        f'<div style="color:#888;font-size:0.85rem">{_league_safe} &bull; <b>{m_date} {m_time}</b> &bull; Strategy: <b>{_strat_safe}</b></div>'
+                        f'<div style="font-size:1.1rem;font-weight:700;margin:6px 0">{_ht_safe} vs {_at_safe}</div>'
+                        f'{fuzzy_warning}'
+                        f'{sub_label}'
+                        f'</div>'
+                        f'<div style="text-align:right;padding-left:12px;flex-shrink:0">'
+                        f'{status_badge}'
+                        f'</div>'
+                        f'</div>'
+                        f'</div>'
+                    )
+                    st.markdown(_card_html, unsafe_allow_html=True)
 
                     fc1, fc2, fc3, fc4, fc5, fc6 = st.columns([1, 1, 1, 1.1, 1.3, 1.2])
                     fc1.metric("Betfair Odds", f"{best_odds:.2f}" if pd.notna(best_odds) else "No Live Odds")
