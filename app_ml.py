@@ -814,6 +814,7 @@ def render_ml_predictions_tab():
                     val_o25 = False
                     val_u25 = False
                     is_val = False
+                    has_no_odds = False  # Fix: must reset each iteration — else leaks from previous fixture
 
                     if search_df is not None and not search_df.empty:
                         import difflib
