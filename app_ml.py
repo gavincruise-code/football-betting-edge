@@ -789,6 +789,10 @@ def render_ml_predictions_tab():
                         st.info("🟡 Using Betfair Live Odds Market Mode")
 
 
+                # ── Debug counters — reset before loop ────────────────────────────
+                _dbg_no_league  = 0  # dropped: no valid league
+                _dbg_kicked_off = 0  # dropped: already kicked off
+
                 for idx, row in filtered_fix.iterrows():
                     h_team = row['HomeTeam']
                     a_team = row['AwayTeam']
@@ -801,6 +805,7 @@ def render_ml_predictions_tab():
                     # Skip fixtures with no valid league — no team history will be found
                     _row_league = str(row.get('league', '') or '').strip()
                     if not _row_league or _row_league in ('nan', 'Unknown', 'None'):
+                        _dbg_no_league += 1
                         continue
 
                     # Skip fixtures that have already kicked off.
@@ -810,6 +815,7 @@ def render_ml_predictions_tab():
                     _time_str = str(m_time).strip()
                     _has_real_time = bool(_time_str) and _time_str not in ('00:00', 'nan', 'None', '')
                     if _has_real_time and sort_dt < pd.Timestamp.now():
+                        _dbg_kicked_off += 1
                         continue
 
                     # Fix #1: Resolve real odds — NaN when no market exists (suppresses false edges)
@@ -1242,6 +1248,28 @@ def render_ml_predictions_tab():
                 evaluated_fixtures.sort(key=lambda x: (not x['is_val'], x['sort_dt'], -x['best_edge']))
 
                 opportunities_found = sum(1 for item in evaluated_fixtures if item['is_val'])
+                _dbg_no_data    = sum(1 for item in evaluated_fixtures if not item['has_data'])
+                _dbg_no_odds    = sum(1 for item in evaluated_fixtures if item.get('has_no_odds', False))
+                _dbg_no_ev      = sum(1 for item in evaluated_fixtures if item['has_data'] and not item['is_val'] and not item.get('has_no_odds', False))
+                _dbg_val_only_skip = len(evaluated_fixtures) - opportunities_found if val_only else 0
+                n_in_feed = len(filtered_fix)
+
+                with st.expander(
+                    f"📊 Fixture Breakdown — {n_in_feed} in window → {len(evaluated_fixtures)} evaluated → {opportunities_found} +EV",
+                    expanded=False
+                ):
+                    st.markdown(f"""
+| Stage | Count | Notes |
+|---|---|---|
+| 🗂️ In date/league window | **{n_in_feed}** | After date & league filters |
+| 🚫 Dropped: no valid league | **{_dbg_no_league}** | League field blank or NaN in feed |
+| ⏰ Dropped: already kicked off | **{_dbg_kicked_off}** | Kickoff time has passed (BST) |
+| ✅ Evaluated by model | **{len(evaluated_fixtures)}** | Passed into scanner loop |
+| — &nbsp; of which: Insufficient team history | **{_dbg_no_data}** | < 5 matches in historical data |
+| — &nbsp; of which: Awaiting live odds | **{_dbg_no_odds}** | No Betfair price found |
+| — &nbsp; of which: No edge detected | **{_dbg_no_ev}** | Model edge below {edge_filter*100:.0f}% threshold |
+| — &nbsp; of which: **+EV Opportunities** | **{opportunities_found}** | Edge ≥ {edge_filter*100:.0f}% with live odds |
+                    """)
 
                 # Render Sorted Fixture Cards
                 for item in evaluated_fixtures:
