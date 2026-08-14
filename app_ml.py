@@ -770,6 +770,14 @@ def render_ml_predictions_tab():
                     if not _row_league or _row_league in ('nan', 'Unknown', 'None'):
                         continue
 
+                    # Skip fixtures that have already kicked off.
+                    # Only filter when we have a real kickoff time (ESPN fixtures supply HH:MM).
+                    # Football-data.co.uk fixtures have no Time column and default to midnight,
+                    # so we only exclude when time is explicitly set and non-zero.
+                    _time_str = str(m_time).strip()
+                    _has_real_time = bool(_time_str) and _time_str not in ('00:00', 'nan', 'None', '')
+                    if _has_real_time and sort_dt < pd.Timestamp.now():
+                        continue
 
                     # Fix #1: Resolve real odds — NaN when no market exists (suppresses false edges)
                     try:
