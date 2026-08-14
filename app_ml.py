@@ -781,59 +781,160 @@ def render_ml_predictions_tab():
 
                     if search_df is not None and not search_df.empty:
                         import difflib
+                        from ml.feature_engine import (
+                            compute_rolling_goal_features,
+                            compute_rolling_xg_features,
+                            compute_rolling_shot_features,
+                        )
+                        try:
+                            from ml.config import ROLLING_WINDOWS, CONGESTION_THRESHOLD_DAYS
+                        except Exception:
+                            ROLLING_WINDOWS = [10, 20, 38]
+                            CONGESTION_THRESHOLD_DAYS = 4
+
+                        # Fix #2: Sort by date so .tail() always returns the truly most-recent matches
+                        search_df = search_df.sort_values('Date').reset_index(drop=True)
+
                         def match_team_exact(target_name, team_list):
                             target_norm = norm_team(target_name)
                             for t in team_list:
                                 if norm_team(t) == target_norm:
-                                    return t
-                            matches = difflib.get_close_matches(target_norm, [norm_team(t) for t in team_list], n=1, cutoff=0.35)
-                            if matches:
-                                matched_norm = matches[0]
+                                    return t, False  # exact match
+                            # Fix #6: Raised from 0.35 to 0.6 — prevents wrong-team silent mismatches
+                            close = difflib.get_close_matches(
+                                target_norm, [norm_team(t) for t in team_list], n=1, cutoff=0.6
+                            )
+                            if close:
                                 for t in team_list:
-                                    if norm_team(t) == matched_norm:
-                                        return t
-                            return target_name
+                                    if norm_team(t) == close[0]:
+                                        return t, True  # fuzzy match — caller can warn user
+                            return target_name, True  # no match found
 
                         if 'HomeTeam' in search_df.columns:
-                            all_lg_teams = list(set(search_df['HomeTeam'].dropna().unique()).union(set(search_df['AwayTeam'].dropna().unique())))
-                            matched_h = match_team_exact(h_team, all_lg_teams)
-                            matched_a = match_team_exact(a_team, all_lg_teams)
+                            all_lg_teams = list(set(search_df['HomeTeam'].dropna().unique()).union(
+                                                set(search_df['AwayTeam'].dropna().unique())))
+                            matched_h, h_fuzzy = match_team_exact(h_team, all_lg_teams)
+                            matched_a, a_fuzzy = match_team_exact(a_team, all_lg_teams)
 
-                            h_matches = search_df[(search_df['HomeTeam'] == matched_h) | (search_df['AwayTeam'] == matched_h)]
-                            a_matches = search_df[(search_df['HomeTeam'] == matched_a) | (search_df['AwayTeam'] == matched_a)]
+                            # Fix #1 & #7: Venue-split histories — home team's HOME games, away team's AWAY games
+                            h_home_hist = search_df[search_df['HomeTeam'] == matched_h]
+                            h_all_hist  = search_df[(search_df['HomeTeam'] == matched_h) | (search_df['AwayTeam'] == matched_h)]
+                            a_away_hist = search_df[search_df['AwayTeam'] == matched_a]
+                            a_all_hist  = search_df[(search_df['HomeTeam'] == matched_a) | (search_df['AwayTeam'] == matched_a)]
                         else:
-                            h_matches = pd.DataFrame()
-                            a_matches = pd.DataFrame()
+                            h_home_hist = h_all_hist = a_away_hist = a_all_hist = pd.DataFrame()
 
-                        if not h_matches.empty and not a_matches.empty:
+                        MIN_HIST = 5
+                        if len(h_all_hist) >= MIN_HIST and len(a_all_hist) >= MIN_HIST:
                             has_data = True
-                            h_recent = h_matches.tail(10)
-                            a_recent = a_matches.tail(10)
 
-                            h_scored = np.where(h_recent['HomeTeam'] == matched_h, h_recent['FTHG'], h_recent['FTAG'])
-                            h_conceded = np.where(h_recent['HomeTeam'] == matched_h, h_recent['FTAG'], h_recent['FTHG'])
-                            a_scored = np.where(a_recent['AwayTeam'] == matched_a, a_recent['FTAG'], a_recent['FTHG'])
-                            a_conceded = np.where(a_recent['AwayTeam'] == matched_a, a_recent['FTHG'], a_recent['FTAG'])
+                            # Fix #5: Use 20-match window for better signal vs noise ratio
+                            WINDOW = 20
 
-                            lam_h = (float(np.nanmean(h_scored)) + float(np.nanmean(a_conceded))) / 2.0
-                            lam_a = (float(np.nanmean(a_scored)) + float(np.nanmean(h_conceded))) / 2.0
+                            # Fix #1 & #7: λ from venue-split histories
+                            # Home team: goals scored AT HOME; Away team: goals conceded AWAY
+                            def _ven_sc_cc(hist, is_home):
+                                """Extract scored/conceded arrays from venue-specific history."""
+                                if hist.empty:
+                                    return np.array([]), np.array([])
+                                s = hist['FTHG' if is_home else 'FTAG'].dropna().values.astype(float)
+                                c = hist['FTAG' if is_home else 'FTHG'].dropna().values.astype(float)
+                                return s, c
 
+                            h_sc, h_cc = _ven_sc_cc(h_home_hist.tail(WINDOW), True)
+                            a_sc, a_cc = _ven_sc_cc(a_away_hist.tail(WINDOW), False)
+
+                            # Fallback to mixed-venue if venue-split history too thin
+                            if len(h_sc) < MIN_HIST:
+                                _t = h_all_hist.tail(WINDOW)
+                                h_sc = np.where(_t['HomeTeam'] == matched_h, _t['FTHG'], _t['FTAG']).astype(float)
+                                h_cc = np.where(_t['HomeTeam'] == matched_h, _t['FTAG'], _t['FTHG']).astype(float)
+                            if len(a_sc) < MIN_HIST:
+                                _t = a_all_hist.tail(WINDOW)
+                                a_sc = np.where(_t['AwayTeam'] == matched_a, _t['FTAG'], _t['FTHG']).astype(float)
+                                a_cc = np.where(_t['AwayTeam'] == matched_a, _t['FTHG'], _t['FTAG']).astype(float)
+
+                            lam_h = (float(np.nanmean(h_sc)) + float(np.nanmean(a_cc))) / 2.0
+                            lam_a = (float(np.nanmean(a_sc)) + float(np.nanmean(h_cc))) / 2.0
                             if pd.isna(lam_h) or lam_h <= 0: lam_h = 1.35
                             if pd.isna(lam_a) or lam_a <= 0: lam_a = 1.15
 
                             sm = score_matrix(lam_h, lam_a)
                             p_dc = sum(sm[i][j] for i in range(7) for j in range(7) if i + j >= 3)
 
-                            # ── Real per-league XGBoost prediction ─────────────────────────
-                            # Build a lightweight feature row for this fixture and run the
-                            # trained league-specific model. Falls back to the momentum proxy
-                            # if no model has been trained yet (calibration not run).
+                            # Fix #3: Build the full ~120-feature set that XGBoost was trained on
+                            feats = {}
+                            for _w in ROLLING_WINDOWS:
+                                # Home team — home venue
+                                feats.update(compute_rolling_goal_features(h_home_hist, matched_h, 'H_H', _w))
+                                feats.update(compute_rolling_xg_features(h_home_hist,  matched_h, 'H_H', _w))
+                                feats.update(compute_rolling_shot_features(h_home_hist, matched_h, 'H_H', _w))
+                                # Home team — all venues
+                                feats.update(compute_rolling_goal_features(h_all_hist,  matched_h, 'H_All', _w))
+                                feats.update(compute_rolling_xg_features(h_all_hist,   matched_h, 'H_All', _w))
+                                feats.update(compute_rolling_shot_features(h_all_hist,  matched_h, 'H_All', _w))
+                                # Away team — away venue
+                                feats.update(compute_rolling_goal_features(a_away_hist, matched_a, 'A_A', _w))
+                                feats.update(compute_rolling_xg_features(a_away_hist,  matched_a, 'A_A', _w))
+                                feats.update(compute_rolling_shot_features(a_away_hist, matched_a, 'A_A', _w))
+                                # Away team — all venues
+                                feats.update(compute_rolling_goal_features(a_all_hist,  matched_a, 'A_All', _w))
+                                feats.update(compute_rolling_xg_features(a_all_hist,   matched_a, 'A_All', _w))
+                                feats.update(compute_rolling_shot_features(a_all_hist,  matched_a, 'A_All', _w))
+
+                            # Trend features: short-term vs season-long trajectory
+                            for _tp in ['H_H', 'H_All', 'A_A', 'A_All']:
+                                _g10 = feats.get(f"goals_scored_avg_{_tp}_10", np.nan)
+                                _g38 = feats.get(f"goals_scored_avg_{_tp}_38", np.nan)
+                                feats[f"goals_trend_{_tp}"] = _g10 - _g38 if (pd.notna(_g10) and pd.notna(_g38)) else np.nan
+                                _x10 = feats.get(f"xG_avg_{_tp}_10", np.nan)
+                                _x38 = feats.get(f"xG_avg_{_tp}_38", np.nan)
+                                feats[f"xG_trend_{_tp}"] = _x10 - _x38 if (pd.notna(_x10) and pd.notna(_x38)) else np.nan
+
+                            # Head-to-head features (last 5 meetings)
+                            _h2h = search_df[
+                                ((search_df['HomeTeam'] == matched_h) & (search_df['AwayTeam'] == matched_a)) |
+                                ((search_df['HomeTeam'] == matched_a) & (search_df['AwayTeam'] == matched_h))
+                            ].tail(5)
+                            if _h2h.empty:
+                                feats.update({'h2h_over25_rate_5': np.nan, 'h2h_avg_goals_5': np.nan, 'h2h_matches_available': 0.0})
+                            else:
+                                _tot = _h2h['FTHG'] + _h2h['FTAG']
+                                feats.update({'h2h_over25_rate_5': float(np.mean(_tot > 2.5)),
+                                              'h2h_avg_goals_5':   float(np.mean(_tot)),
+                                              'h2h_matches_available': float(len(_h2h))})
+
+                            # Contextual features: rest days, congestion, month
+                            _today = pd.Timestamp.now().normalize()
+                            _h_last = h_all_hist.iloc[-1]['Date'] if not h_all_hist.empty else _today
+                            _a_last = a_all_hist.iloc[-1]['Date'] if not a_all_hist.empty else _today
+                            _days_h = max(0, (_today - _h_last).days)
+                            _days_a = max(0, (_today - _a_last).days)
+                            feats['days_since_last_home'] = float(_days_h)
+                            feats['days_since_last_away'] = float(_days_a)
+                            feats['is_congested_home'] = float(_days_h < CONGESTION_THRESHOLD_DAYS)
+                            feats['is_congested_away'] = float(_days_a < CONGESTION_THRESHOLD_DAYS)
+                            feats['month'] = float(_today.month)
+
+                            # Market features
+                            _ip_o = (1.0 / o25) if (has_live_odds and pd.notna(o25) and o25 > 1.0) else np.nan
+                            _ip_u = (1.0 / u25) if (has_live_odds and pd.notna(u25) and u25 > 1.0) else np.nan
+                            feats['implied_prob_over25'] = _ip_o
+                            feats['implied_prob_under25'] = _ip_u
+                            feats['overround'] = (_ip_o + _ip_u - 1.0) if (pd.notna(_ip_o) and pd.notna(_ip_u)) else np.nan
+                            feats['odds_ratio_over25'] = (o25 / u25) if (has_live_odds and pd.notna(u25) and u25 > 0) else np.nan
+
+                            # DC-derived features (some models may have been trained with these)
+                            feats['dc_prob'] = p_dc
+                            feats['lam_home'] = lam_h
+                            feats['lam_away'] = lam_a
+
+                            # ── XGBoost prediction using full feature set ──────────────────────
                             p_xgb = None
                             try:
                                 from ml.ml_model import load_model, predict_proba as ml_predict_proba
                                 from ml.league_calibrator import get_xgb_model_name_for_league
                                 _xgb_name = get_xgb_model_name_for_league(league_name, _cal_cache)
-                                # Fix #6: Cache models in session_state — load each .joblib once per session
                                 if 'xgb_model_cache' not in st.session_state:
                                     st.session_state['xgb_model_cache'] = {}
                                 if _xgb_name not in st.session_state['xgb_model_cache']:
@@ -843,30 +944,7 @@ def render_ml_predictions_tab():
                                     st.session_state['xgb_model_cache'][_xgb_name] = (_m, _c)
                                 _xgb_model, _xgb_cal = st.session_state['xgb_model_cache'][_xgb_name]
                                 if _xgb_model is not None:
-                                    # Build minimal feature DataFrame for this fixture
-                                    h_scored_arr = np.array(h_scored, dtype=float)
-                                    a_scored_arr = np.array(a_scored, dtype=float)
-                                    h_conceded_arr = np.array(h_conceded, dtype=float)
-                                    a_conceded_arr = np.array(a_conceded, dtype=float)
-                                    h_total = h_scored_arr + h_conceded_arr
-                                    a_total = a_scored_arr + a_conceded_arr
-                                    feat_row = {
-                                        'dc_prob': p_dc,
-                                        'goals_scored_avg_H_10': float(np.nanmean(h_scored_arr)),
-                                        'goals_conceded_avg_H_10': float(np.nanmean(h_conceded_arr)),
-                                        'total_goals_avg_H_10': float(np.nanmean(h_total)),
-                                        'over25_rate_H_10': float(np.nanmean(h_total > 2.5)),
-                                        'goals_scored_avg_A_10': float(np.nanmean(a_scored_arr)),
-                                        'goals_conceded_avg_A_10': float(np.nanmean(a_conceded_arr)),
-                                        'total_goals_avg_A_10': float(np.nanmean(a_total)),
-                                        'over25_rate_A_10': float(np.nanmean(a_total > 2.5)),
-                                        'lam_home': lam_h,
-                                        'lam_away': lam_a,
-                                        'implied_prob_over25': implied_probability(o25),
-                                    }
-                                    feat_df_row = pd.DataFrame([feat_row])
-                                    # Align columns to what the model was trained on
-                                    import joblib
+                                    feat_df_row = pd.DataFrame([feats])
                                     _model_feats = getattr(_xgb_model, 'feature_names_in_', None)
                                     if _model_feats is not None:
                                         for _fc in _model_feats:
@@ -878,13 +956,15 @@ def render_ml_predictions_tab():
                             except Exception:
                                 pass
 
-                            # Fallback: momentum-adjusted proxy if no model loaded
+                            # Fallback: momentum proxy if no trained model available
                             if p_xgb is None:
-                                h_mom = float(np.nanmean(h_scored[-5:])) - float(np.nanmean(h_scored)) if len(h_scored) >= 5 else 0
-                                a_mom = float(np.nanmean(a_scored[-5:])) - float(np.nanmean(a_scored)) if len(a_scored) >= 5 else 0
-                                p_xgb = float(np.clip(p_dc + 0.08 * (h_mom + a_mom), 0.15, 0.85))
-
-                            # Fix #3: Use the calibrated effective_strat from lines 673-684 — do NOT overwrite it here
+                                _ha = h_all_hist.tail(10)
+                                _aa = a_all_hist.tail(10)
+                                _h_all_sc = np.where(_ha['HomeTeam'] == matched_h, _ha['FTHG'], _ha['FTAG']).astype(float) if not _ha.empty else np.array([1.35])
+                                _a_all_sc = np.where(_aa['AwayTeam'] == matched_a, _aa['FTAG'], _aa['FTHG']).astype(float) if not _aa.empty else np.array([1.15])
+                                _h_mom = (float(np.nanmean(_h_all_sc[-5:])) - float(np.nanmean(_h_all_sc))) if len(_h_all_sc) >= 5 else 0
+                                _a_mom = (float(np.nanmean(_a_all_sc[-5:])) - float(np.nanmean(_a_all_sc))) if len(_a_all_sc) >= 5 else 0
+                                p_xgb = float(np.clip(p_dc + 0.08 * (_h_mom + _a_mom), 0.15, 0.85))
 
                             if effective_strat == "Dixon-Coles Only":
                                 model_prob_o25 = p_dc
@@ -892,6 +972,7 @@ def render_ml_predictions_tab():
                                 model_prob_o25 = p_xgb
                             else:  # Dual Ensemble
                                 model_prob_o25 = 0.5 * p_dc + 0.5 * p_xgb
+
                     
                     # Fix #1: Only compute edge when real live odds exist
                     if has_data and pd.notna(model_prob_o25) and has_live_odds:
@@ -970,6 +1051,11 @@ def render_ml_predictions_tab():
                         'has_data': has_data,
                         'has_live_odds': has_live_odds,
                         'has_no_odds': locals().get('has_no_odds', False),
+                        # Fix #6: Fuzzy match metadata for user warning in card
+                        'matched_h': locals().get('matched_h', h_team),
+                        'matched_a': locals().get('matched_a', a_team),
+                        'h_fuzzy':   locals().get('h_fuzzy', False),
+                        'a_fuzzy':   locals().get('a_fuzzy', False),
                         'best_market': best_market,
                         'best_edge': best_edge,
                         'best_odds': best_odds,
@@ -1004,6 +1090,18 @@ def render_ml_predictions_tab():
                     best_prob = item['best_prob']
                     best_imp = item['best_imp']
                     rec_k_stake = item['rec_k_stake']
+                    matched_h = item.get('matched_h', h_team)
+                    matched_a = item.get('matched_a', a_team)
+                    h_fuzzy   = item.get('h_fuzzy', False)
+                    a_fuzzy   = item.get('a_fuzzy', False)
+
+                    # Fix #6: Build fuzzy-match warning string shown under team name
+                    fuzzy_parts = []
+                    if h_fuzzy and matched_h != h_team:
+                        fuzzy_parts.append(f"{h_team} → <i>{matched_h}</i>")
+                    if a_fuzzy and matched_a != a_team:
+                        fuzzy_parts.append(f"{a_team} → <i>{matched_a}</i>")
+                    fuzzy_warning = (f'<div style="color:#e8a500;font-size:0.78rem;margin-top:2px;">⚠️ Fuzzy name match: {" &amp; ".join(fuzzy_parts)}</div>' if fuzzy_parts else "")
 
                     if not has_data:
                         card_border = "1px dashed #ffbb00"
@@ -1032,6 +1130,7 @@ def render_ml_predictions_tab():
                             <div>
                                 <span style="color: #888; font-size: 0.85rem;">{row['league']} • <b>{m_date} {m_time}</b> • Strategy: <b>{item.get('effective_strat', scanner_model)}</b></span>
                                 <h4 style="margin: 4px 0;">{h_team} vs {a_team}</h4>
+                                {fuzzy_warning}
                                 {sub_label}
                             </div>
                             <div style="text-align: right;">
