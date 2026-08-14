@@ -328,7 +328,11 @@ def render_ml_predictions_tab():
                 with f_col1:
                     date_window = st.selectbox("📅 Date Window", ["Today Only", "Today & Tomorrow", "Next 3 Days", "Next 7 Days", "All Upcoming"], index=0)
                 with f_col2:
-                    all_league_keys = ["All Leagues"] + sorted(list(set(list(UNDERSTAT_LEAGUES.keys()) + list(fix_df['league'].dropna().unique()))))
+                    # Deduplicated league list: config keys + any extra leagues in the live feed
+                    _known = list(UNDERSTAT_LEAGUES.keys())
+                    _feed_leagues = list(fix_df['league'].dropna().unique())
+                    _all_leagues = sorted(set(_known + _feed_leagues))
+                    all_league_keys = ["All Leagues"] + _all_leagues
                     sel_league = st.selectbox("Filter League", all_league_keys)
                 with f_col3:
                     scanner_model = st.selectbox("🤖 Model Strategy", ["🎯 Auto-Optimal (By League)", "Dual Ensemble (Recommended)", "Dixon-Coles Only", "XGBoost ML Only"], index=0)
