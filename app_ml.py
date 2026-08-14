@@ -617,9 +617,95 @@ def render_ml_predictions_tab():
                 evaluated_fixtures = []
 
                 import unicodedata
+                # football-data.co.uk uses abbreviated team names that ESPN/Betfair don't.
+                # This map translates common→fd names BEFORE fuzzy matching so the
+                # difflib cutoff doesn't need to bridge completely different strings.
+                TEAM_ALIASES = {
+                    # ── Portugal ──────────────────────────────────────────────────────
+                    'sporting cp': 'sp lisbon', 'sporting clube de portugal': 'sp lisbon',
+                    'vitoria de guimaraes': 'guimaraes', 'vitoria sc': 'guimaraes',
+                    'vitoria guimaraes': 'guimaraes',
+                    'sporting braga': 'sp braga', 'sc braga': 'sp braga',
+                    'cd nacional': 'nacional', 'cd santa clara': 'santa clara',
+                    'rio ave fc': 'rio ave', 'fc famalicao': 'famalicao',
+                    'fc arouca': 'arouca', 'gil vicente fc': 'gil vicente',
+                    'moreirense fc': 'moreirense', 'gd estoril praia': 'estoril',
+                    'belenenses': 'b sad', 'casa pia ac': 'casa pia',
+                    # ── Spain ─────────────────────────────────────────────────────────
+                    'athletic bilbao': 'ath bilbao', 'athletic club': 'ath bilbao',
+                    'atletico madrid': 'ath madrid', 'atletico de madrid': 'ath madrid',
+                    'real betis': 'betis', 'real betis balompie': 'betis',
+                    'real valladolid': 'valladolid', 'rayo vallecano': 'vallecano',
+                    'deportivo alaves': 'alaves', 'sd alaves': 'alaves',
+                    'cd leganes': 'leganes', 'ud las palmas': 'las palmas',
+                    'real sociedad': 'sociedad', 'ca osasuna': 'osasuna',
+                    'ud almeria': 'almeria', 'girona fc': 'girona',
+                    'getafe cf': 'getafe', 'celta vigo': 'celta',
+                    'cadiz cf': 'cadiz', 'elche cf': 'elche',
+                    'espanyol': 'espanol', 'rcd espanyol': 'espanol',
+                    'granada cf': 'granada',
+                    # ── Italy ─────────────────────────────────────────────────────────
+                    'ac milan': 'milan', 'inter milan': 'inter',
+                    'fc internazionale': 'inter', 'internazionale': 'inter',
+                    'ss lazio': 'lazio', 'as roma': 'roma',
+                    'acf fiorentina': 'fiorentina', 'ac fiorentina': 'fiorentina',
+                    'hellas verona': 'verona', 'udinese calcio': 'udinese',
+                    'us sassuolo': 'sassuolo', 'bologna fc': 'bologna',
+                    'torino fc': 'torino', 'cagliari calcio': 'cagliari',
+                    'spezia calcio': 'spezia', 'venezia fc': 'venezia',
+                    'us lecce': 'lecce', 'us salernitana': 'salernitana',
+                    'ac monza': 'monza', 'frosinone calcio': 'frosinone',
+                    'empoli fc': 'empoli', 'us cremonese': 'cremonese',
+                    # ── Germany ───────────────────────────────────────────────────────
+                    'bayer leverkusen': 'leverkusen', 'bayer 04 leverkusen': 'leverkusen',
+                    'borussia dortmund': 'dortmund', 'borussia m\'gladbach': 'mgladbach',
+                    'borussia monchengladbach': 'mgladbach',
+                    'rb leipzig': 'leipzig', 'rasenballsport leipzig': 'leipzig',
+                    'sc freiburg': 'freiburg', 'vfb stuttgart': 'stuttgart',
+                    'tsg hoffenheim': 'hoffenheim', 'tsg 1899 hoffenheim': 'hoffenheim',
+                    'fc augsburg': 'augsburg', 'vfl wolfsburg': 'wolfsburg',
+                    'vfl bochum': 'bochum', 'eintracht frankfurt': 'ein frankfurt',
+                    'fc koln': 'koln', '1. fc koln': 'koln',
+                    'hertha bsc': 'hertha', 'sv werder bremen': 'werder bremen',
+                    'fc heidenheim': 'heidenheim', 'sv darmstadt 98': 'darmstadt',
+                    # ── France ────────────────────────────────────────────────────────
+                    'paris saint-germain': 'paris sg', 'psg': 'paris sg',
+                    'olympique marseille': 'marseille', 'om': 'marseille',
+                    'olympique lyonnais': 'lyon', 'ol': 'lyon',
+                    'stade rennais': 'rennes', 'stade brestois': 'brest',
+                    'as monaco': 'monaco', 'ogc nice': 'nice',
+                    'rc lens': 'lens', 'losc lille': 'lille',
+                    'montpellier hsc': 'montpellier', 'stade de reims': 'reims',
+                    'clermont foot': 'clermont', 'fc nantes': 'nantes',
+                    'toulouse fc': 'toulouse', 'rc strasbourg': 'strasbourg',
+                    'havre ac': 'le havre', 'le havre ac': 'le havre',
+                    'metz': 'metz', 'angers sco': 'angers',
+                    # ── Netherlands ───────────────────────────────────────────────────
+                    'psv eindhoven': 'psv', 'ajax amsterdam': 'ajax',
+                    'feyenoord rotterdam': 'feyenoord', 'az alkmaar': 'az',
+                    'fc utrecht': 'utrecht', 'sc heerenveen': 'heerenveen',
+                    'vitesse arnhem': 'vitesse', 'nec nijmegen': 'nec',
+                    # ── Turkey ────────────────────────────────────────────────────────
+                    'galatasaray sk': 'galatasaray', 'galatasaray a.s.': 'galatasaray',
+                    'besiktas jk': 'besiktas', 'besiktas': 'besiktas',
+                    'fenerbahce sk': 'fenerbahce', 'trabzonspor ak': 'trabzonspor',
+                    'sivasspor': 'sivasspor', 'konyaspor': 'konyaspor',
+                    'gaziantep fk': 'gaziantep', 'adana demirspor': 'adana demirspor',
+                    'antalyaspor': 'antalyaspor', 'kayserispor': 'kayserispor',
+                    'hatayspor': 'hatayspor', 'kasimpasa': 'kasimpasa',
+                    'alanyaspor': 'alanyaspor', 'istanbulspor': 'istanbulspor',
+                    # ── Greece ────────────────────────────────────────────────────────
+                    'panathinaikos fc': 'panathinaikos', 'olympiacos fc': 'olympiakos',
+                    'olympiacos': 'olympiakos', 'aek athens': 'aek',
+                    'paok fc': 'paok', 'aris thessaloniki': 'aris',
+                }
+
                 def norm_team(name):
                     if not name: return ""
-                    s = str(name).lower()
+                    s = str(name).lower().strip()
+                    # Check alias map first (exact match on lowercased input)
+                    if s in TEAM_ALIASES:
+                        s = TEAM_ALIASES[s]
                     s = s.replace('ø', 'o').replace('æ', 'ae').replace('å', 'a').replace('ß', 'ss')
                     s = s.replace('ü', 'u').replace('ö', 'o').replace('ä', 'a').replace('é', 'e').replace('è', 'e').replace('à', 'a').replace('ç', 'c').replace('ñ', 'n')
                     n = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
