@@ -472,6 +472,7 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
             _apif_rows = []
             today_str   = today.strftime('%Y-%m-%d')
             max_str     = max_date.strftime('%Y-%m-%d')
+            _season     = today.year  # Veikkausliiga, Allsvenskan etc. run calendar-year seasons
 
             for lg_name, lg_id in LEAGUE_ID_MAP.items():
                 if lg_name in _espn_covered:
@@ -481,11 +482,12 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
                         "https://v3.football.api-sports.io/fixtures",
                         headers=_api_headers,
                         params={
-                            "league": lg_id,
-                            "from": today_str,
-                            "to": max_str,
-                            "status": "NS",          # Not Started
-                            "timezone": "Europe/London",  # API returns in UK local time
+                            "league":    lg_id,
+                            "season":    _season,   # REQUIRED — omitting causes silent "0 results" error
+                            "from":      today_str,
+                            "to":        max_str,
+                            "status":    "NS",       # Not Started
+                            "timezone":  "Europe/London",
                         },
                         timeout=8,
                     )
@@ -499,9 +501,11 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
                             ev_date = pd.to_datetime(raw_dt, errors='coerce')
                             if pd.isnull(ev_date):
                                 continue
-                            # API already returns in Europe/London — strip tz label
+                            # API returns in Europe/London timezone — strip the offset label
+                            # WITHOUT converting the time value (replace vs tz_localize which raises
+                            # TypeError on tz-aware timestamps and tz_convert which shifts to UTC)
                             if ev_date.tzinfo is not None:
-                                ev_date = ev_date.tz_localize(None)
+                                ev_date = ev_date.replace(tzinfo=None)
                             if not (today <= ev_date.normalize() <= max_date):
                                 continue
                             h = teams.get("home", {}).get("name", "")
