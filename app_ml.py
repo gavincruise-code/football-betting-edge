@@ -731,6 +731,33 @@ def render_ml_predictions_tab():
                     'panathinaikos fc': 'panathinaikos', 'olympiacos fc': 'olympiakos',
                     'olympiacos': 'olympiakos', 'aek athens': 'aek',
                     'paok fc': 'paok', 'aris thessaloniki': 'aris',
+                    # ── England (Championship / League 1 / League 2 short names) ──────
+                    'wolves': 'wolverhampton wanderers', 'wolverhampton': 'wolverhampton wanderers',
+                    'blackburn': 'blackburn rovers', 'blackpool fc': 'blackpool',
+                    'sheffield utd': 'sheffield united', 'sheff utd': 'sheffield united',
+                    'sheffield wed': 'sheffield weds', 'sheff wed': 'sheffield weds',
+                    'west brom': 'west bromwich', 'wba': 'west bromwich',
+                    'norwich': 'norwich city', 'cardiff': 'cardiff city',
+                    'hull': 'hull city', 'hull city fc': 'hull city',
+                    'swansea': 'swansea city', 'stoke': 'stoke city',
+                    'luton': 'luton town', 'ipswich': 'ipswich town',
+                    'sunderland afc': 'sunderland', 'middlesbrough fc': 'middlesbrough',
+                    'coventry': 'coventry city', 'qpr': 'queens park rangers',
+                    'pne': 'preston', 'preston ne': 'preston',
+                    'bristol city fc': 'bristol city', 'bristol rovers fc': 'bristol rovers',
+                    'barnsley fc': 'barnsley', 'burton albion fc': 'burton',
+                    'fleetwood town fc': 'fleetwood', 'oxford united fc': 'oxford',
+                    'wigan athletic fc': 'wigan', 'bolton wanderers fc': 'bolton',
+                    'plymouth argyle fc': 'plymouth', 'exeter city fc': 'exeter',
+                    'portsmouth fc': 'portsmouth', 'charlton athletic fc': 'charlton',
+                    # ── Scotland ──────────────────────────────────────────────────────
+                    'celtic fc': 'celtic', 'rangers fc': 'rangers',
+                    'heart of midlothian': 'hearts', 'hearts fc': 'hearts',
+                    'hibernian fc': 'hibs', 'hibernian': 'hibs',
+                    'aberdeen fc': 'aberdeen', 'dundee united fc': 'dundee utd',
+                    'motherwell fc': 'motherwell', 'st mirren fc': 'st mirren',
+                    'livingston fc': 'livingston', 'ross county fc': 'ross county',
+                    'kilmarnock fc': 'kilmarnock', 'st johnstone fc': 'st johnstone',
                 }
 
                 def norm_team(name):
@@ -986,14 +1013,19 @@ def render_ml_predictions_tab():
                             for t in team_list:
                                 if norm_team(t) == target_norm:
                                     return t, False  # exact match
-                            # Fix #6: Raised from 0.35 to 0.6 — prevents wrong-team silent mismatches
+
+                            # Raised cutoff to 0.75 — 0.6 allows "nantes" → "angers" (both 6 chars,
+                            # share 4 letters). Also require the first 3 normalised chars to match
+                            # as a sanity check against short-name collisions.
                             close = difflib.get_close_matches(
-                                target_norm, [norm_team(t) for t in team_list], n=1, cutoff=0.6
+                                target_norm, [norm_team(t) for t in team_list], n=1, cutoff=0.75
                             )
                             if close:
-                                for t in team_list:
-                                    if norm_team(t) == close[0]:
-                                        return t, True  # fuzzy match — caller can warn user
+                                # Sanity: first 3 chars of matched name must equal first 3 of target
+                                if target_norm[:3] == close[0][:3]:
+                                    for t in team_list:
+                                        if norm_team(t) == close[0]:
+                                            return t, True  # fuzzy match — caller can warn user
                             return target_name, True  # no match found
 
                         if 'HomeTeam' in search_df.columns:
