@@ -323,12 +323,12 @@ class BetfairExchangeClient:
         nh = norm_str(home_team)
         na = norm_str(away_team)
 
-        # 1. Exact or substring matching
+        # Pass 1: Exact or substring match (fastest)
         for ev_key, data in self.market_cache.items():
             if (nh in ev_key or nh[:4] in ev_key) and (na in ev_key or na[:4] in ev_key):
                 return data
 
-        # 2. Key word split matching
+        # Pass 2: Word-level match (handles "Shandong Taishan" vs "shandong taishan v qingdao")
         h_words = [w for w in nh.split() if len(w) > 3]
         a_words = [w for w in na.split() if len(w) > 3]
         for ev_key, data in self.market_cache.items():
@@ -336,6 +336,28 @@ class BetfairExchangeClient:
             a_match = any(w in ev_key for w in a_words) if a_words else na[:3] in ev_key
             if h_match and a_match:
                 return data
+
+        # Pass 3: Fuzzy token ratio — handles transliteration differences
+        # (e.g. "Taishan" vs "Tai Shan", Arabic diacritics stripped)
+        import difflib
+        best_score = 0.0
+        best_data  = None
+        for ev_key, data in self.market_cache.items():
+            # Split ev_key into two halves around " v " separator
+            parts = ev_key.split(" v ", 1)
+            if len(parts) == 2:
+                h_score = difflib.SequenceMatcher(None, nh, parts[0].strip()).ratio()
+                a_score = difflib.SequenceMatcher(None, na, parts[1].strip()).ratio()
+                score = h_score * a_score
+            else:
+                score = difflib.SequenceMatcher(None, f"{nh} {na}", ev_key).ratio()
+            if score > best_score:
+                best_score = score
+                best_data  = data
+
+        # Accept fuzzy match only when both teams score >= 0.45 similarity
+        if best_score >= 0.45 * 0.45 and best_data is not None:
+            return best_data
 
         return {
             "source": "no_live_odds",
