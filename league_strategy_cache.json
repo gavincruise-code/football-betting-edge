@@ -1,5 +1,5 @@
 {
-  "calibrated_at": "2026-08-12T13:40:25.423243",
+  "calibrated_at": "2026-08-13T23:42:27.950640",
   "n_matches": 300,
   "edge_margin": 0.05,
   "leagues": {
@@ -14,7 +14,12 @@
       "home_win_pct": 43.2,
       "draw_rate_pct": 24.5,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_EPL_over25",
+      "over25_base_rate": 0.5878,
+      "xgb_val_logloss": 0.7796,
+      "xgb_val_auc": 0.5033,
+      "n_matches": 1140
     },
     "Championship": {
       "fd_code": "E1",
@@ -27,7 +32,12 @@
       "home_win_pct": 44.0,
       "draw_rate_pct": 26.0,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Championship_over25",
+      "over25_base_rate": 0.4881,
+      "xgb_val_logloss": 0.7693,
+      "xgb_val_auc": 0.4521,
+      "n_matches": 1656
     },
     "League 1": {
       "fd_code": "E2",
@@ -40,7 +50,12 @@
       "home_win_pct": 43.8,
       "draw_rate_pct": 24.5,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_League_1_over25",
+      "over25_base_rate": 0.5041,
+      "xgb_val_logloss": 0.7255,
+      "xgb_val_auc": 0.5288,
+      "n_matches": 1656
     },
     "League 2": {
       "fd_code": "E3",
@@ -53,7 +68,12 @@
       "home_win_pct": 43.0,
       "draw_rate_pct": 25.7,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_League_2_over25",
+      "over25_base_rate": 0.5,
+      "xgb_val_logloss": 0.7644,
+      "xgb_val_auc": 0.5072,
+      "n_matches": 1656
     },
     "National League": {
       "fd_code": "EC",
@@ -79,7 +99,12 @@
       "home_win_pct": 45.0,
       "draw_rate_pct": 24.9,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Scottish_Premiership_over25",
+      "over25_base_rate": 0.5593,
+      "xgb_val_logloss": 0.8264,
+      "xgb_val_auc": 0.52,
+      "n_matches": 684
     },
     "Scottish Championship": {
       "fd_code": "SC1",
@@ -92,7 +117,12 @@
       "home_win_pct": 41.1,
       "draw_rate_pct": 28.0,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Scottish_Championship_over25",
+      "over25_base_rate": 0.4862,
+      "xgb_val_logloss": 0.8793,
+      "xgb_val_auc": 0.4266,
+      "n_matches": 540
     },
     "La Liga": {
       "fd_code": "SP1",
@@ -118,7 +148,12 @@
       "home_win_pct": 45.9,
       "draw_rate_pct": 27.7,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Segunda_Division_over25",
+      "over25_base_rate": 0.4576,
+      "xgb_val_logloss": 0.733,
+      "xgb_val_auc": 0.5244,
+      "n_matches": 1386
     },
     "Bundesliga": {
       "fd_code": "D1",
@@ -131,7 +166,12 @@
       "home_win_pct": 42.0,
       "draw_rate_pct": 25.4,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Bundesliga_over25",
+      "over25_base_rate": 0.6179,
+      "xgb_val_logloss": 0.7004,
+      "xgb_val_auc": 0.5407,
+      "n_matches": 918
     },
     "Bundesliga 2": {
       "fd_code": "D2",
@@ -144,7 +184,12 @@
       "home_win_pct": 44.1,
       "draw_rate_pct": 25.2,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Bundesliga_2_over25",
+      "over25_base_rate": 0.5926,
+      "xgb_val_logloss": 0.7609,
+      "xgb_val_auc": 0.4748,
+      "n_matches": 918
     },
     "Serie A": {
       "fd_code": "I1",
@@ -170,7 +215,12 @@
       "home_win_pct": 40.6,
       "draw_rate_pct": 32.4,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Serie_B_over25",
+      "over25_base_rate": 0.4772,
+      "xgb_val_logloss": 0.7849,
+      "xgb_val_auc": 0.49,
+      "n_matches": 1140
     },
     "Ligue 1": {
       "fd_code": "F1",
@@ -196,7 +246,12 @@
       "home_win_pct": 42.1,
       "draw_rate_pct": 27.7,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Ligue_2_over25",
+      "over25_base_rate": 0.4823,
+      "xgb_val_logloss": 0.7218,
+      "xgb_val_auc": 0.5425,
+      "n_matches": 990
     },
     "Eredivisie": {
       "fd_code": "N1",
@@ -209,7 +264,12 @@
       "home_win_pct": 44.3,
       "draw_rate_pct": 25.4,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Eredivisie_over25",
+      "over25_base_rate": 0.5991,
+      "xgb_val_logloss": 0.7037,
+      "xgb_val_auc": 0.5694,
+      "n_matches": 918
     },
     "Pro League": {
       "fd_code": "B1",
@@ -274,7 +334,12 @@
       "home_win_pct": 49.5,
       "draw_rate_pct": 25.1,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_USA_MLS_over25",
+      "over25_base_rate": 0.6323,
+      "xgb_val_logloss": 0.746,
+      "xgb_val_auc": 0.4781,
+      "n_matches": 512
     },
     "Argentina": {
       "fd_code": "ARG",
@@ -287,7 +352,12 @@
       "home_win_pct": 43.1,
       "draw_rate_pct": 30.2,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Argentina_over25",
+      "over25_base_rate": 0.2955,
+      "xgb_val_logloss": 0.7272,
+      "xgb_val_auc": 0.5585,
+      "n_matches": 378
     },
     "Brazil": {
       "fd_code": "BRA",
@@ -300,7 +370,12 @@
       "home_win_pct": 48.4,
       "draw_rate_pct": 26.9,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Brazil_over25",
+      "over25_base_rate": 0.4655,
+      "xgb_val_logloss": 0.8533,
+      "xgb_val_auc": 0.5466,
+      "n_matches": 380
     },
     "Mexico": {
       "fd_code": "MEX",
@@ -313,7 +388,12 @@
       "home_win_pct": 44.6,
       "draw_rate_pct": 27.1,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Mexico_over25",
+      "over25_base_rate": 0.5498,
+      "xgb_val_logloss": 0.6812,
+      "xgb_val_auc": 0.6288,
+      "n_matches": 338
     },
     "Japan": {
       "fd_code": "JPN",
@@ -326,7 +406,12 @@
       "home_win_pct": 41.0,
       "draw_rate_pct": 24.9,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Japan_over25",
+      "over25_base_rate": 0.5043,
+      "xgb_val_logloss": 1.0018,
+      "xgb_val_auc": 0.4298,
+      "n_matches": 380
     },
     "China": {
       "fd_code": "CHN",
@@ -339,7 +424,12 @@
       "home_win_pct": 45.5,
       "draw_rate_pct": 25.3,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_China_over25",
+      "over25_base_rate": 0.6065,
+      "xgb_val_logloss": 0.7331,
+      "xgb_val_auc": 0.6078,
+      "n_matches": 240
     },
     "Sweden": {
       "fd_code": "SWE",
@@ -352,7 +442,12 @@
       "home_win_pct": 43.4,
       "draw_rate_pct": 25.1,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Sweden_over25",
+      "over25_base_rate": 0.5509,
+      "xgb_val_logloss": 0.9252,
+      "xgb_val_auc": 0.4505,
+      "n_matches": 242
     },
     "Norway": {
       "fd_code": "NOR",
@@ -365,7 +460,12 @@
       "home_win_pct": 47.3,
       "draw_rate_pct": 24.0,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Norway_over25",
+      "over25_base_rate": 0.5721,
+      "xgb_val_logloss": 0.8115,
+      "xgb_val_auc": 0.5417,
+      "n_matches": 242
     },
     "Denmark": {
       "fd_code": "DNK",
@@ -378,7 +478,12 @@
       "home_win_pct": 43.0,
       "draw_rate_pct": 26.1,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Denmark_over25",
+      "over25_base_rate": 0.6185,
+      "xgb_val_logloss": 0.8753,
+      "xgb_val_auc": 0.5341,
+      "n_matches": 193
     },
     "Finland": {
       "fd_code": "FIN",
@@ -391,20 +496,30 @@
       "home_win_pct": 43.9,
       "draw_rate_pct": 25.5,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Finland_over25",
+      "over25_base_rate": 0.5931,
+      "xgb_val_logloss": 0.8073,
+      "xgb_val_auc": 0.6143,
+      "n_matches": 167
     },
     "Poland": {
       "fd_code": "POL",
       "strategy": "Dual Ensemble",
-      "backtest_roi": 0.07,
-      "backtest_pl": 51.3,
-      "backtest_bets": 70,
-      "backtest_win_rate": 0.529,
+      "backtest_roi": 0.08,
+      "backtest_pl": 54.2,
+      "backtest_bets": 66,
+      "backtest_win_rate": 0.53,
       "avg_goals": 2.647,
       "home_win_pct": 44.0,
       "draw_rate_pct": 27.1,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Poland_over25",
+      "over25_base_rate": 0.5108,
+      "xgb_val_logloss": 0.827,
+      "xgb_val_auc": 0.4883,
+      "n_matches": 306
     },
     "Romania": {
       "fd_code": "ROU",
@@ -417,7 +532,12 @@
       "home_win_pct": 42.9,
       "draw_rate_pct": 27.8,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Romania_over25",
+      "over25_base_rate": 0.3883,
+      "xgb_val_logloss": 0.8819,
+      "xgb_val_auc": 0.5024,
+      "n_matches": 318
     },
     "Switzerland": {
       "fd_code": "SWZ",
@@ -430,7 +550,12 @@
       "home_win_pct": 43.6,
       "draw_rate_pct": 25.5,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Switzerland_over25",
+      "over25_base_rate": 0.5337,
+      "xgb_val_logloss": 1.1436,
+      "xgb_val_auc": 0.3812,
+      "n_matches": 230
     },
     "Austria": {
       "fd_code": "AUT",
@@ -443,7 +568,135 @@
       "home_win_pct": 42.1,
       "draw_rate_pct": 25.0,
       "recommended_min_edge": 0.05,
-      "sample_matches": 300
+      "sample_matches": 300,
+      "xgb_model_name": "xgb_Austria_over25",
+      "over25_base_rate": 0.56,
+      "xgb_val_logloss": 0.7511,
+      "xgb_val_auc": 0.6634,
+      "n_matches": 195
+    },
+    "Conference": {
+      "xgb_model_name": "xgb_Conference_over25",
+      "over25_base_rate": 0.5409,
+      "xgb_val_logloss": 0.8138,
+      "xgb_val_auc": 0.392,
+      "n_matches": 1656,
+      "fd_code": "EC"
+    },
+    "Scottish League 1": {
+      "xgb_model_name": "xgb_Scottish_League_1_over25",
+      "over25_base_rate": 0.5446,
+      "xgb_val_logloss": 1.0067,
+      "xgb_val_auc": 0.3945,
+      "n_matches": 540,
+      "fd_code": "SC2"
+    },
+    "Scottish League 2": {
+      "xgb_model_name": "xgb_Scottish_League_2_over25",
+      "over25_base_rate": 0.5108,
+      "xgb_val_logloss": 0.9157,
+      "xgb_val_auc": 0.4346,
+      "n_matches": 540,
+      "fd_code": "SC3"
+    },
+    "La_Liga": {
+      "xgb_model_name": "xgb_La_Liga_over25",
+      "over25_base_rate": 0.4868,
+      "xgb_val_logloss": 0.7651,
+      "xgb_val_auc": 0.532,
+      "n_matches": 1140,
+      "fd_code": "SP1"
+    },
+    "Serie_A": {
+      "xgb_model_name": "xgb_Serie_A_over25",
+      "over25_base_rate": 0.4776,
+      "xgb_val_logloss": 0.7637,
+      "xgb_val_auc": 0.5145,
+      "n_matches": 1140,
+      "fd_code": "I1"
+    },
+    "Ligue_1": {
+      "xgb_model_name": "xgb_Ligue_1_over25",
+      "over25_base_rate": 0.5358,
+      "xgb_val_logloss": 0.7481,
+      "xgb_val_auc": 0.5105,
+      "n_matches": 918,
+      "fd_code": "F1"
+    },
+    "Belgium": {
+      "xgb_model_name": "xgb_Belgium_over25",
+      "over25_base_rate": 0.525,
+      "xgb_val_logloss": 0.7683,
+      "xgb_val_auc": 0.4847,
+      "n_matches": 935,
+      "fd_code": "B1"
+    },
+    "Portugal": {
+      "xgb_model_name": "xgb_Portugal_over25",
+      "over25_base_rate": 0.5228,
+      "xgb_val_logloss": 0.7981,
+      "xgb_val_auc": 0.5135,
+      "n_matches": 918,
+      "fd_code": "P1"
+    },
+    "Turkey": {
+      "xgb_model_name": "xgb_Turkey_over25",
+      "over25_base_rate": 0.5413,
+      "xgb_val_logloss": 0.7815,
+      "xgb_val_auc": 0.4722,
+      "n_matches": 1028,
+      "fd_code": "T1"
+    },
+    "Greece": {
+      "xgb_model_name": "xgb_Greece_over25",
+      "over25_base_rate": 0.5184,
+      "xgb_val_logloss": 0.8129,
+      "xgb_val_auc": 0.4713,
+      "n_matches": 709,
+      "fd_code": "G1"
+    },
+    "South Korea": {
+      "xgb_model_name": "xgb_South_Korea_over25",
+      "over25_base_rate": 0.5048,
+      "xgb_val_logloss": 0.8756,
+      "xgb_val_auc": 0.4824,
+      "n_matches": 231
+    },
+    "India": {
+      "xgb_model_name": "xgb_India_over25",
+      "over25_base_rate": 0.5634,
+      "xgb_val_logloss": 1.0524,
+      "xgb_val_auc": 0.4495,
+      "n_matches": 162
+    },
+    "Saudi Arabia": {
+      "xgb_model_name": "xgb_Saudi_Arabia_over25",
+      "over25_base_rate": 0.5735,
+      "xgb_val_logloss": 0.8367,
+      "xgb_val_auc": 0.5917,
+      "n_matches": 306
+    },
+    "Croatia": {
+      "xgb_model_name": "xgb_Croatia_over25",
+      "over25_base_rate": 0.4313,
+      "xgb_val_logloss": 0.9779,
+      "xgb_val_auc": 0.2597,
+      "n_matches": 180
+    },
+    "Russia": {
+      "xgb_model_name": "xgb_Russia_over25",
+      "over25_base_rate": 0.4954,
+      "xgb_val_logloss": 0.9372,
+      "xgb_val_auc": 0.5516,
+      "n_matches": 244
+    },
+    "Australia": {
+      "xgb_model_name": "xgb_Australia_over25",
+      "over25_base_rate": 0.6323,
+      "xgb_val_logloss": 0.7093,
+      "xgb_val_auc": 0.7101,
+      "n_matches": 176
     }
-  }
+  },
+  "generated_at": "2026-08-14T09:29:28.023798"
 }
