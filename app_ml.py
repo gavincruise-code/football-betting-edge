@@ -720,16 +720,17 @@ def render_ml_predictions_tab():
                         if overround > 1.15:
                             has_live_odds = False  # Market is distorted — treat as no-odds
 
-                    league_name = row.get('league', 'Unknown')
+                    league_name = str(row.get('league', '') or 'Unknown')
                     if scanner_model == "🎯 Auto-Optimal (By League)":
                         try:
                             from ml.league_calibrator import get_strategy_for_league
                             effective_strat = get_strategy_for_league(league_name, _cal_cache)
                         except Exception:
                             # Fallback heuristic if calibrator unavailable
+                            _lg_str = str(league_name)
                             effective_strat = st.session_state.get('league_strategy_map', {}).get(
-                                league_name,
-                                "Dixon-Coles Only" if any(w in league_name for w in ["La", "EPL", "Premier"]) else "Dual Ensemble"
+                                _lg_str,
+                                "Dixon-Coles Only" if any(w in _lg_str for w in ["La", "EPL", "Premier"]) else "Dual Ensemble"
                             )
                     else:
                         effective_strat = scanner_model
