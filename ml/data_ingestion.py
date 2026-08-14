@@ -270,9 +270,13 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
         url = "https://www.football-data.co.uk/fixtures.csv"
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
-            from io import StringIO
+            from io import StringIO, BytesIO
             from data_utils import normalize_columns
-            df = pd.read_csv(StringIO(resp.text))
+            # Use utf-8-sig to strip the UTF-8 BOM that football-data.co.uk serves,
+            # which otherwise corrupts the first column name to 'ï»¿Div' instead of 'Div'
+            df = pd.read_csv(BytesIO(resp.content), encoding='utf-8-sig')
+            # Belt-and-braces: strip any remaining non-ASCII prefix from column names
+            df.columns = [c.lstrip('\ufeff').strip() for c in df.columns]
             df = normalize_columns(df)
             if 'Date' in df.columns:
                 df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
