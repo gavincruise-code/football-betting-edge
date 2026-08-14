@@ -412,7 +412,13 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
                     ev_date = pd.to_datetime(raw_dt, utc=True, errors='coerce')
                     if pd.isnull(ev_date):
                         continue
-                    ev_date = ev_date.tz_localize(None)
+                    # Convert UTC → UK local time (BST in summer, GMT in winter)
+                    # tz_convert shifts the timestamp correctly; tz_localize(None) then
+                    # drops the tz label so downstream date comparisons work normally.
+                    try:
+                        ev_date = ev_date.tz_convert('Europe/London').tz_localize(None)
+                    except Exception:
+                        ev_date = ev_date.tz_localize(None)  # fallback: keep as UTC
                     # Strict window: today to +7 days
                     if not (today <= ev_date.normalize() <= max_date):
                         continue
