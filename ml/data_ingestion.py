@@ -295,6 +295,9 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
             }
             if 'Div' in df.columns:
                 df['league'] = df['Div'].map(div_map).fillna(df['Div'])
+            # Drop rows where league mapped to NaN (blank Div rows in fixtures.csv)
+            if 'league' in df.columns:
+                df = df[df['league'].notna() & (df['league'].astype(str).str.strip() != '')]
             if not df.empty:
                 all_upcoming.append(df)
     except Exception as e:

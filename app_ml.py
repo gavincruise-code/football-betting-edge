@@ -679,6 +679,12 @@ def render_ml_predictions_tab():
                     raw_o25 = row.get('over25_odds', np.nan)
                     raw_u25 = row.get('under25_odds', np.nan)
 
+                    # Skip fixtures with no valid league — no team history will be found
+                    _row_league = str(row.get('league', '') or '').strip()
+                    if not _row_league or _row_league in ('nan', 'Unknown', 'None'):
+                        continue
+
+
                     # Fix #1: Resolve real odds — NaN when no market exists (suppresses false edges)
                     try:
                         bf_odds = bf_client.fetch_market_odds(h_team, a_team)
