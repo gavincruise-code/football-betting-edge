@@ -61,6 +61,11 @@ UNDERSTAT_LEAGUES = {
     "Brazil":               "BRA",
     "Argentina":            "ARG",
     "Mexico":               "MEX",
+    "Colombia":             "COL",
+    "Chile":                "CHL",
+    "Uruguay":              "URU",
+    "Ecuador":              "ECU",
+    "Peru":                 "PER",
     # ── Asia ─────────────────────────────────────────────────── Source B ──
     "Japan":                "JPN",
     "China":                "CHN",
@@ -68,6 +73,11 @@ UNDERSTAT_LEAGUES = {
     "India":                "ind.1",
     "Indian Super League":  "ind.1",
     "Saudi Arabia":         "SAU",
+    "Thailand":             "THA",
+    # ── Africa ───────────────────────────────────────────────── Source B ──
+    "Egypt":                "EGY",
+    "Morocco":              "MAR",
+    "South Africa":         "RSA",
     # ── Other Europe (API-Football) ───────────────────────────── Source B ──
     "Sweden":               "SWE",
     "Norway":               "NOR",
@@ -79,6 +89,12 @@ UNDERSTAT_LEAGUES = {
     "Austria":              "AUT",
     "Croatia":              "HNL",
     "Russia":               "RUS",
+    "Serbia":               "SRB",
+    "Czech Republic":       "CZE",
+    "Ukraine":              "UKR",
+    "Slovakia":             "SVK",
+    "Hungary":              "HUN",
+    "Israel":               "ISR",
     # ── Oceania ──────────────────────────────────────────────── Source B ──
     "Australia":            "AUS",
 }

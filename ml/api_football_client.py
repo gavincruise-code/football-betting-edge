@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 ml/api_football_client.py
 =========================
@@ -40,17 +40,28 @@ LEAGUE_ID_MAP = {
     "South Korea": 292, "K League 1": 292,
     "India": 323, "Indian Super League": 323,
     "Saudi Arabia": 307, "Saudi Pro League": 307,
+    "Thailand": 296, "Thai League 1": 296,
     # Americas
     "USA (MLS)": 253, "MLS": 253,
     "Brazil": 71, "Brazil Serie A": 71,
     "Argentina": 128, "Argentina Primera": 128,
     "Mexico": 262, "Liga MX": 262,
+    "Colombia": 239, "Categoria Primera A": 239,
+    "Chile": 265, "Primera Division Chile": 265,
+    "Uruguay": 268, "Primera Division Uruguay": 268,
+    "Ecuador": 240, "LigaPro": 240,
+    "Peru": 281, "Liga 1 Peru": 281,
+    # Africa
+    "Egypt": 233, "Egyptian Premier League": 233,
+    "Morocco": 200, "Botola Pro": 200,
+    "South Africa": 288, "Premier Soccer League": 288,
     # Europe extras (football-data.co.uk does not cover these)
     "Sweden": 113, "Norway": 103, "Denmark": 119,
     "Finland": 244, "Poland": 106, "Romania": 283,
     "Switzerland": 207, "Austria": 218, "Ireland": 357,
     "Russia": 235, "Croatia": 210, "Czech Republic": 345,
-    "Ukraine": 333, "Serbia": 286,
+    "Ukraine": 333, "Serbia": 286, "Slovakia": 332,
+    "Hungary": 271, "Israel": 384,
     # Oceania
     "Australia": 188, "A-League": 188,
 }

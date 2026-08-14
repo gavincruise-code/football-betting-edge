@@ -696,7 +696,105 @@
       "xgb_val_logloss": 0.7093,
       "xgb_val_auc": 0.7101,
       "n_matches": 176
+    },
+    "Thailand": {
+      "xgb_model_name": "xgb_Thailand_over25",
+      "over25_base_rate": 0.5694,
+      "xgb_val_logloss": 1.0471,
+      "xgb_val_auc": 0.3524,
+      "n_matches": 240
+    },
+    "Colombia": {
+      "xgb_model_name": "xgb_Colombia_over25",
+      "over25_base_rate": 0.3741,
+      "xgb_val_logloss": 1.0023,
+      "xgb_val_auc": 0.4113,
+      "n_matches": 431
+    },
+    "Chile": {
+      "xgb_model_name": "xgb_Chile_over25",
+      "over25_base_rate": 0.5514,
+      "xgb_val_logloss": 0.909,
+      "xgb_val_auc": 0.3333,
+      "n_matches": 240
+    },
+    "Uruguay": {
+      "xgb_model_name": "xgb_Uruguay_over25",
+      "over25_base_rate": 0.4371,
+      "xgb_val_logloss": 0.9361,
+      "xgb_val_auc": 0.3816,
+      "n_matches": 177
+    },
+    "Ecuador": {
+      "xgb_model_name": "xgb_Ecuador_over25",
+      "over25_base_rate": 0.4161,
+      "xgb_val_logloss": 0.8047,
+      "xgb_val_auc": 0.5404,
+      "n_matches": 310
+    },
+    "Peru": {
+      "xgb_model_name": "xgb_Peru_over25",
+      "over25_base_rate": 0.4982,
+      "xgb_val_logloss": 0.7755,
+      "xgb_val_auc": 0.5436,
+      "n_matches": 306
+    },
+    "Egypt": {
+      "xgb_model_name": "xgb_Egypt_over25",
+      "over25_base_rate": 0.3788,
+      "xgb_val_logloss": 0.6865,
+      "xgb_val_auc": 0.5983,
+      "n_matches": 225
+    },
+    "Morocco": {
+      "xgb_model_name": "xgb_Morocco_over25",
+      "over25_base_rate": 0.414,
+      "xgb_val_logloss": 1.0021,
+      "xgb_val_auc": 0.381,
+      "n_matches": 244
+    },
+    "South Africa": {
+      "xgb_model_name": "xgb_South_Africa_over25",
+      "over25_base_rate": 0.3112,
+      "xgb_val_logloss": 0.6437,
+      "xgb_val_auc": 0.6458,
+      "n_matches": 227
+    },
+    "Serbia": {
+      "xgb_model_name": "xgb_Serbia_over25",
+      "over25_base_rate": 0.5704,
+      "xgb_val_logloss": 0.7453,
+      "xgb_val_auc": 0.6526,
+      "n_matches": 300
+    },
+    "Czech Republic": {
+      "xgb_model_name": "xgb_Czech_Republic_over25",
+      "over25_base_rate": 0.5378,
+      "xgb_val_logloss": 0.8862,
+      "xgb_val_auc": 0.4857,
+      "n_matches": 279
+    },
+    "Ukraine": {
+      "xgb_model_name": "xgb_Ukraine_over25",
+      "over25_base_rate": 0.3925,
+      "xgb_val_logloss": 0.9671,
+      "xgb_val_auc": 0.4733,
+      "n_matches": 244
+    },
+    "Slovakia": {
+      "xgb_model_name": "xgb_Slovakia_over25",
+      "over25_base_rate": 0.5581,
+      "xgb_val_logloss": 0.9171,
+      "xgb_val_auc": 0.4837,
+      "n_matches": 196
+    },
+    "Hungary": {
+      "xgb_model_name": "xgb_Hungary_over25",
+      "over25_base_rate": 0.5169,
+      "xgb_val_logloss": 0.7939,
+      "xgb_val_auc": 0.5525,
+      "n_matches": 198
     }
   },
-  "generated_at": "2026-08-14T09:29:28.023798"
+  "generated_at": "2026-08-14T09:59:29.982469"
 }

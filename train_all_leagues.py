@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 train_all_leagues.py
 ====================
@@ -59,12 +59,22 @@ FDCO_CODES = {
 
 # API-Football IDs (source B)
 APIF_IDS = {
+    # Asia
     "Japan": 98, "China": 169, "South Korea": 292,
-    "USA (MLS)": 253, "Brazil": 71, "Argentina": 128, "Mexico": 262,
     "India": 323, "Indian Super League": 323, "Saudi Arabia": 307,
+    "Thailand": 296,
+    # Americas
+    "USA (MLS)": 253, "Brazil": 71, "Argentina": 128, "Mexico": 262,
+    "Colombia": 239, "Chile": 265, "Uruguay": 268, "Ecuador": 240, "Peru": 281,
+    # Africa
+    "Egypt": 233, "Morocco": 200, "South Africa": 288,
+    # Europe extras
     "Sweden": 113, "Norway": 103, "Denmark": 119, "Finland": 244,
     "Poland": 106, "Romania": 283, "Switzerland": 207, "Austria": 218,
-    "Croatia": 210, "Russia": 235, "Australia": 188,
+    "Croatia": 210, "Russia": 235, "Serbia": 286, "Czech Republic": 345,
+    "Ukraine": 333, "Slovakia": 332, "Hungary": 271, "Israel": 384,
+    # Oceania
+    "Australia": 188,
 }
 
 # ── data loading ─────────────────────────────────────────────────────────────

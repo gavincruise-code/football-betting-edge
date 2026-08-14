@@ -330,29 +330,55 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
     # ── Source 3: ESPN Scoreboard API (today's & tomorrow's fixtures) ─────────
     try:
         espn_slugs = {
-            'chn.1':  'China',          'jpn.1':  'Japan',
-            'swe.1':  'Sweden',         'usa.1':  'USA (MLS)',
-            'bel.1':  'Belgium',        'ned.1':  'Netherlands',
-            'por.1':  'Liga Portugal',  'tur.1':  'Turkey',
-            'gre.1':  'Greece',         'eng.1':  'EPL',
-            'esp.1':  'La_Liga',        'ger.1':  'Bundesliga',
-            'ita.1':  'Serie_A',        'fra.1':  'Ligue_1',
-            'arg.1':  'Argentina',      'bra.1':  'Brazil',
-            'mex.1':  'Mexico',         'nor.1':  'Norway',
-            'dnk.1':  'Denmark',        'fin.1':  'Finland',
-            'pol.1':  'Poland',         'aut.1':  'Austria',
-            'sco.1':  'Scottish Premiership',
-            'eng.2':  'Championship',
-            'eng.5':  'National League',
-            'ind.1':  'Indian Super League',
-            'ind.2':  'Calcutta Premier Division',
-            'sui.1':  'Switzerland',    'rou.1':  'Romania',
-            'uefa.champions':          'UEFA Champions League',
-            'uefa.champions_qual':     'UEFA CL Qualifying',
-            'uefa.europa':             'UEFA Europa League',
-            'uefa.europa_qual':        'UEFA EL Qualifying',
-            'uefa.europa.conf':        'UEFA Conference League',
-            'uefa.europa.conf_qual':   'UEFA ECL Qualifying',
+            # ── England ────────────────────────────────────────────────────
+            'eng.1':  'EPL',              'eng.2':  'Championship',
+            'eng.3':  'League 1',         'eng.4':  'League 2',
+            'eng.5':  'Conference',
+            # ── Scotland ───────────────────────────────────────────────────
+            'sco.1':  'Scottish Premiership', 'sco.2': 'Scottish Championship',
+            # ── Spain ──────────────────────────────────────────────────────
+            'esp.1':  'La_Liga',          'esp.2':  'Segunda Division',
+            # ── Germany ────────────────────────────────────────────────────
+            'ger.1':  'Bundesliga',       'ger.2':  'Bundesliga 2',
+            # ── Italy ──────────────────────────────────────────────────────
+            'ita.1':  'Serie_A',          'ita.2':  'Serie B',
+            # ── France ─────────────────────────────────────────────────────
+            'fra.1':  'Ligue_1',          'fra.2':  'Ligue 2',
+            # ── Other Europe (football-data.co.uk) ─────────────────────────
+            'ned.1':  'Eredivisie',       'bel.1':  'Belgium',
+            'por.1':  'Liga Portugal',    'tur.1':  'Super Lig',
+            'gre.1':  'Super League Greece',
+            # ── Other Europe (API-Football) ─────────────────────────────────
+            'swe.1':  'Sweden',           'nor.1':  'Norway',
+            'dnk.1':  'Denmark',          'fin.1':  'Finland',
+            'pol.1':  'Poland',           'aut.1':  'Austria',
+            'sui.1':  'Switzerland',      'rou.1':  'Romania',
+            'cro.1':  'Croatia',          'rus.1':  'Russia',
+            'srb.1':  'Serbia',           'cze.1':  'Czech Republic',
+            'ukr.1':  'Ukraine',          'svk.1':  'Slovakia',
+            'hun.1':  'Hungary',          'isr.1':  'Israel',
+            # ── Asia ───────────────────────────────────────────────────────
+            'chn.1':  'China',            'jpn.1':  'Japan',
+            'kor.1':  'South Korea',      'sau.1':  'Saudi Arabia',
+            'ind.1':  'Indian Super League', 'tha.1': 'Thailand',
+            # ── Americas ───────────────────────────────────────────────────
+            'usa.1':  'USA (MLS)',         'arg.1':  'Argentina',
+            'bra.1':  'Brazil',            'mex.1':  'Mexico',
+            'col.1':  'Colombia',          'chl.1':  'Chile',
+            'uru.1':  'Uruguay',           'ecu.1':  'Ecuador',
+            'per.1':  'Peru',
+            # ── Oceania ────────────────────────────────────────────────────
+            'aus.1':  'Australia',
+            # ── Africa ─────────────────────────────────────────────────────
+            'egy.1':  'Egypt',            'mar.1':  'Morocco',
+            'rsa.1':  'South Africa',
+            # ── UEFA ───────────────────────────────────────────────────────
+            'uefa.champions':      'UEFA Champions League',
+            'uefa.champions_qual': 'UEFA CL Qualifying',
+            'uefa.europa':         'UEFA Europa League',
+            'uefa.europa_qual':    'UEFA EL Qualifying',
+            'uefa.europa.conf':    'UEFA Conference League',
+            'uefa.europa.conf_qual': 'UEFA ECL Qualifying',
         }
         espn_rows = []
         for slug, lg_name in espn_slugs.items():
