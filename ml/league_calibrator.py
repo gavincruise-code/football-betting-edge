@@ -47,52 +47,75 @@ logger = logging.getLogger(__name__)
 # football-data CSV to backtest against.
 # ──────────────────────────────────────────────────────────────────────────────
 CALIBRATION_LEAGUES = {
-    # English
+    # ── England (football-data.co.uk) ─────────────────────────────────────────
     "EPL":                  "E0",
     "Championship":         "E1",
     "League 1":             "E2",
     "League 2":             "E3",
-    "National League":      "EC",
-    # Scottish
+    "Conference":           "EC",
+    # ── Scotland ──────────────────────────────────────────────────────────────
     "Scottish Premiership": "SC0",
     "Scottish Championship":"SC1",
-    # Spanish
-    "La Liga":              "SP1",
+    "Scottish League 1":    "SC2",
+    "Scottish League 2":    "SC3",
+    # ── Spain ─────────────────────────────────────────────────────────────────
+    "La_Liga":              "SP1",
     "Segunda Division":     "SP2",
-    # German
+    # ── Germany ───────────────────────────────────────────────────────────────
     "Bundesliga":           "D1",
     "Bundesliga 2":         "D2",
-    # Italian
-    "Serie A":              "I1",
+    # ── Italy ─────────────────────────────────────────────────────────────────
+    "Serie_A":              "I1",
     "Serie B":              "I2",
-    # French
-    "Ligue 1":              "F1",
+    # ── France ────────────────────────────────────────────────────────────────
+    "Ligue_1":              "F1",
     "Ligue 2":              "F2",
-    # Dutch / Belgian / Portuguese / Turkish / Greek
+    # ── Other Europe (football-data.co.uk) ────────────────────────────────────
     "Eredivisie":           "N1",
-    "Pro League":           "B1",
+    "Belgium":              "B1",
     "Liga Portugal":        "P1",
     "Super Lig":            "T1",
-    "Super League":         "G1",
-    # Americas
-    "USA (MLS)":            "USA",
-    "Argentina":            "ARG",
-    "Brazil":               "BRA",
-    "Mexico":               "MEX",
-    # Asia
-    "Japan":                "JPN",
-    "China":                "CHN",
-    "Calcutta Premier Division": "ind.2",
-    "Indian Super League":  "ind.1",
-    # Nordic / Eastern Europe
-    "Sweden":               "SWE",
-    "Norway":               "NOR",
-    "Denmark":              "DNK",
-    "Finland":              "FIN",
-    "Poland":               "POL",
-    "Romania":              "ROU",
-    "Switzerland":          "SWZ",
-    "Austria":              "AUT",
+    "Super League Greece":  "G1",
+    # ── Other Europe (API-Football) ───────────────────────────────────────────
+    "Sweden":               "APIF:113",
+    "Norway":               "APIF:103",
+    "Denmark":              "APIF:119",
+    "Finland":              "APIF:244",
+    "Poland":               "APIF:106",
+    "Romania":              "APIF:283",
+    "Switzerland":          "APIF:207",
+    "Austria":              "APIF:218",
+    "Croatia":              "APIF:210",
+    "Russia":               "APIF:235",
+    "Serbia":               "APIF:286",
+    "Czech Republic":       "APIF:345",
+    "Ukraine":              "APIF:333",
+    "Slovakia":             "APIF:332",
+    "Hungary":              "APIF:271",
+    "Israel":               "APIF:384",
+    # ── Americas (API-Football) ───────────────────────────────────────────────
+    "USA (MLS)":            "APIF:253",
+    "Brazil":               "APIF:71",
+    "Argentina":            "APIF:128",
+    "Mexico":               "APIF:262",
+    "Colombia":             "APIF:239",
+    "Chile":                "APIF:265",
+    "Uruguay":              "APIF:268",
+    "Ecuador":              "APIF:240",
+    "Peru":                 "APIF:281",
+    # ── Asia (API-Football) ───────────────────────────────────────────────────
+    "Japan":                "APIF:98",
+    "China":                "APIF:169",
+    "South Korea":          "APIF:292",
+    "India":                "APIF:323",
+    "Saudi Arabia":         "APIF:307",
+    "Thailand":             "APIF:296",
+    # ── Africa (API-Football) ─────────────────────────────────────────────────
+    "Egypt":                "APIF:233",
+    "Morocco":              "APIF:200",
+    "South Africa":         "APIF:288",
+    # ── Oceania (API-Football) ────────────────────────────────────────────────
+    "Australia":            "APIF:188",
 }
 
 CACHE_FILE = os.path.join(
@@ -168,6 +191,10 @@ def calibrate_all_leagues(
     from backtester import run_backtest
     from ml.feature_engine import compute_all_features as build_feature_df
 
+    # Load existing cache so we can preserve xgb_model_name entries
+    # written by train_all_leagues.py
+    existing_cache = load_calibration_cache().get("leagues", {})
+
     leagues = list(CALIBRATION_LEAGUES.items())
     total = len(leagues)
     results = {}
@@ -177,7 +204,13 @@ def calibrate_all_leagues(
             progress_cb(league_name, i, total)
 
         try:
-            df = download_league_data(fd_code)
+            # ── Data loading: APIF: prefix → API-Football, else football-data ──
+            if fd_code.startswith("APIF:"):
+                from ml.api_football_client import fetch_league_history
+                df = fetch_league_history(league_name, min_matches=50)
+            else:
+                df = download_league_data(fd_code)
+
             if df.empty or "FTHG" not in df.columns:
                 logger.warning("No data for %s (%s)", league_name, fd_code)
                 continue
@@ -195,6 +228,17 @@ def calibrate_all_leagues(
             completed["total_goals"] = completed["FTHG"] + completed["FTAG"]
             avg_goals  = float(completed["total_goals"].mean())
             home_win   = float((completed.get("FTR", pd.Series()) == "H").mean()) if "FTR" in completed.columns else 0.45
+
+            # Ensure over25 result column exists (API-Football data won't have it)
+            if "over25" not in completed.columns:
+                completed["over25"] = (completed["total_goals"] > 2.5).astype(int)
+
+            # Ensure over25_odds column exists (needed by run_backtest for EV calc)
+            if "over25_odds" not in completed.columns or completed["over25_odds"].isna().all():
+                base_rate = max(float(completed["over25"].mean()), 0.05)
+                completed["over25_odds"]  = round(0.95 / base_rate, 3)
+                completed["under25_odds"] = round(0.95 / max(1.0 - base_rate, 0.05), 3)
+
             draw_rate  = float((completed.get("FTR", pd.Series()) == "D").mean()) if "FTR" in completed.columns else 0.25
 
             # Backtest on the N most-recent matches
@@ -204,34 +248,37 @@ def calibrate_all_leagues(
             strategy    = _pick_strategy(avg_goals, draw_rate, bt.roi)
             min_edge    = _recommended_edge(bt.roi)
 
+            # Preserve xgb_model_name from train_all_leagues.py if it exists
+            existing_model_name = existing_cache.get(league_name, {}).get("xgb_model_name")
+
             results[league_name] = {
-                "fd_code":           fd_code,
-                "strategy":          strategy,
-                "backtest_roi":      round(bt.roi, 2),
-                "backtest_pl":       round(bt.total_profit_loss, 2),
-                "backtest_bets":     bt.total_bets,
-                "backtest_win_rate": round(bt.win_rate, 3),
-                "avg_goals":         round(avg_goals, 3),
-                "home_win_pct":      round(home_win * 100, 1),
-                "draw_rate_pct":     round(draw_rate * 100, 1),
+                "fd_code":              fd_code,
+                "strategy":             strategy,
+                "backtest_roi":         round(bt.roi, 2),
+                "backtest_pl":          round(bt.total_profit_loss, 2),
+                "backtest_bets":        bt.total_bets,
+                "backtest_win_rate":    round(bt.win_rate, 3),
+                "avg_goals":            round(avg_goals, 3),
+                "home_win_pct":         round(home_win * 100, 1),
+                "draw_rate_pct":        round(draw_rate * 100, 1),
                 "recommended_min_edge": min_edge,
-                "sample_matches":    len(sample),
-                "xgb_model_name":    None,  # filled in below if training succeeds
+                "sample_matches":       len(sample),
+                "xgb_model_name":       existing_model_name,  # from train_all_leagues.py
             }
 
-            # ── Per-league XGBoost training ──────────────────────────────────
-            # Skip ESPN-only leagues that have no football-data CSV history
-            _espn_only = fd_code.startswith('ind') or fd_code in ('uefa', 'ecl')
-            if not _espn_only and len(completed) >= 200:
+            # ── Per-league XGBoost training (football-data.co.uk only) ──────────
+            # API-Football leagues already trained by train_all_leagues.py
+            _skip_xgb = fd_code.startswith("APIF:") or fd_code.startswith("ind")
+            if not _skip_xgb and len(completed) >= 200 and not existing_model_name:
                 try:
                     feature_df = build_feature_df(completed)
-                    if not feature_df.empty and 'over25' in feature_df.columns:
+                    if not feature_df.empty and "over25" in feature_df.columns:
                         from ml.backtester_v2 import walk_forward_backtest
-                        _safe_code = fd_code.replace('.', '_')
+                        _safe_code = fd_code.replace(".", "_")
                         _model_name = f"xgb_{_safe_code}_over25"
                         walk_forward_backtest(
                             feature_df,
-                            strategy='dual',
+                            strategy="dual",
                             model_name=_model_name,
                         )
                         results[league_name]["xgb_model_name"] = _model_name
@@ -243,7 +290,7 @@ def calibrate_all_leagues(
                     )
 
             logger.info(
-                "Calibrated %-22s → %-22s  ROI %+.1f%%  avg_goals %.2f",
+                "Calibrated %-25s → %-22s  ROI %+.1f%%  avg_goals %.2f",
                 league_name, strategy, bt.roi, avg_goals,
             )
 
