@@ -539,17 +539,70 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
 
     res = pd.concat(all_upcoming, ignore_index=True)
 
-    # Deduplicate by fuzzy 5-char team key
     if 'HomeTeam' in res.columns and 'AwayTeam' in res.columns:
-        res['h_key'] = res['HomeTeam'].apply(
-            lambda x: ''.join(c for c in str(x) if c.isalnum()).lower()[:5] if pd.notnull(x) else ''
+
+        # ── Helper: normalise a team name to first-6 alphanum chars lowercase ──
+        def _tk(name):
+            return ''.join(c for c in str(name) if c.isalnum()).lower()[:6] if pd.notnull(name) else ''
+
+        # ── Score each row by odds completeness: prefer rows with real odds ──
+        # fixtures.csv has bookmaker odds; ESPN/API-Football rows have NaN.
+        # Higher score = more odds columns filled = kept when deduplicating.
+        odds_cols = ['over25_odds', 'under25_odds', 'draw_odds', 'home_odds', 'away_odds']
+        res['_odds_score'] = sum(
+            res[c].notna().astype(int) for c in odds_cols if c in res.columns
         )
-        res['a_key'] = res['AwayTeam'].apply(
-            lambda x: ''.join(c for c in str(x) if c.isalnum()).lower()[:5] if pd.notnull(x) else ''
-        )
-        res = res.drop_duplicates(subset=['h_key', 'a_key'], keep='first').drop(columns=['h_key', 'a_key'])
+        res = res.sort_values('_odds_score', ascending=False).reset_index(drop=True)
+
+        res['_h_key'] = res['HomeTeam'].apply(_tk)
+        res['_a_key'] = res['AwayTeam'].apply(_tk)
+        res['_time']  = res['Time'].apply(
+            lambda t: str(t).strip() if 'Time' in res.columns else ''
+        ) if 'Time' in res.columns else ''
+
+        # ── Pass 1: deduplicate rows that share Date + Time + either team key ──
+        # Groups fixtures by kickoff slot; within each slot, any pair sharing
+        # a home-key OR away-key is treated as the same match.
+        seen_indices = set()
+        keep_indices = []
+        date_time_groups = res.groupby(['Date', '_time']).groups
+
+        for (date, time_val), idx_list in date_time_groups.items():
+            if time_val in ('', '00:00', 'nan', 'None'):
+                # No real kickoff time — skip pass-1 for this group, handle in pass-2
+                keep_indices.extend(idx_list.tolist())
+                continue
+
+            group_rows = [(i, res.at[i, '_h_key'], res.at[i, '_a_key']) for i in idx_list]
+            merged = {}  # canonical_idx -> set of (h_key, a_key) seen
+
+            for i, hk, ak in group_rows:
+                # Check if this row matches any already-kept row in this slot
+                matched = None
+                for canon_idx, known_keys in merged.items():
+                    if hk in known_keys or ak in known_keys:
+                        matched = canon_idx
+                        break
+                if matched is None:
+                    merged[i] = {hk, ak}
+                else:
+                    merged[matched].add(hk)
+                    merged[matched].add(ak)
+
+            keep_indices.extend(merged.keys())
+            seen_indices.update(set(idx_list.tolist()) - set(merged.keys()))
+
+        res = res.loc[sorted(set(keep_indices))].reset_index(drop=True)
+
+        # ── Pass 2: fallback 6-char key dedup for rows without kickoff time ──
+        # Catches fixtures.csv (no Time) vs ESPN/API-Football (has Time) dupes
+        # that weren't caught in pass 1 because they fell in different time groups.
+        res = res.drop_duplicates(subset=['Date', '_h_key', '_a_key'], keep='first')
+
+        res = res.drop(columns=['_h_key', '_a_key', '_time', '_odds_score'], errors='ignore')
 
     if 'Date' in res.columns:
         res = res.sort_values('Date').reset_index(drop=True)
 
     return res
+
