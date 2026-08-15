@@ -85,4 +85,5 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-08-15 13:02:07,2026-08-15,League 2,Barnet,Salford,Under 2.5,1.96,🎯 Auto (Dual Ensemble),58.4,51.0,7.3,37.51,,PENDING,0.0,256.44
 2026-08-15 13:03:12,2026-08-15,Segunda Division,Andorra,Ceuta,Under 2.5,2.1,🎯 Auto (Dual Ensemble),65.8,47.6,18.1,50.0,,PENDING,0.0,256.44
 2026-08-15 16:52:12,2026-08-15,Super Lig,Kasimpasa,Trabzonspor,Under 2.5,1.97,🎯 Auto (Dual Ensemble),58.4,50.8,7.7,38.96,,PENDING,0.0,256.44
-2026-08-15 16:52:33,2026-08-15,La_Liga,Alaves,Getafe,Over 2.5,3.45,🎯 Auto (Dual Ensemble),46.0,29.0,17.0,50.0,,PENDING,0.0,0.0
+2026-08-15 16:52:33,2026-08-15,La_Liga,Alaves,Getafe,Over 2.5,3.45,🎯 Auto (Dual Ensemble),46.0,29.0,17.0,50.0,,PENDING,0.0,256.44
+2026-08-15 16:53:11,2026-08-15,Eredivisie,Excelsior,PSV Eindhoven,Under 2.5,3.55,🎯 Auto (Dual Ensemble),39.5,28.2,11.3,39.37,,PENDING,0.0,0.0
