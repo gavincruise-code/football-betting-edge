@@ -77,4 +77,5 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-08-15 12:57:27,2026-08-15,Scottish League 2,Forfar,Stirling,Over 2.5,1.84,🎯 Auto (Dual Ensemble),63.6,54.3,9.3,50.0,,PENDING,0.0,256.44
 2026-08-15 12:57:52,2026-08-15,League 2,Accrington,Colchester,Under 2.5,1.83,🎯 Auto (Dual Ensemble),63.3,54.6,8.7,47.88,,PENDING,0.0,256.44
 2026-08-15 12:58:09,2026-08-15,League 2,Crawley Town,Crewe,Under 2.5,1.95,🎯 Auto (Dual Ensemble),63.1,51.3,11.8,50.0,,PENDING,0.0,256.44
-2026-08-15 12:59:01,2026-08-15,League 1,Cambridge,Wigan,Over 2.5,2.3,🎯 Auto (Dual Ensemble),52.0,43.5,8.5,37.54,,PENDING,0.0,0.0
+2026-08-15 12:59:01,2026-08-15,League 1,Cambridge,Wigan,Over 2.5,2.3,🎯 Auto (Dual Ensemble),52.0,43.5,8.5,37.54,,PENDING,0.0,256.44
+2026-08-15 12:59:27,2026-08-15,League 1,Bradford,Peterboro,Under 2.5,2.22,🎯 Auto (Dual Ensemble),53.3,45.0,8.3,37.75,,PENDING,0.0,0.0
