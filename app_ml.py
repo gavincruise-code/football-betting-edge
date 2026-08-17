@@ -367,6 +367,36 @@ def render_ml_predictions_tab():
                     )
                     st.session_state['user_bankroll'] = user_bankroll
 
+                    st.divider()
+                    st.subheader("⚠️ Early-Season Settings")
+                    _is_aug_sep = pd.Timestamp.now().month in (8, 9)
+                    early_season_mode = st.checkbox(
+                        "Early-Season Mode",
+                        value=_is_aug_sep,
+                        help=(
+                            "Automatically enabled Aug–Sep. When on:\n"
+                            "• Stake dampener: 50% of normal Kelly stake\n"
+                            "• Under 2.5 minimum edge raised to 8%\n"
+                            "(Teams lack defensive cohesion early in season)"
+                        ),
+                        key="early_season_mode"
+                    )
+                    if early_season_mode:
+                        st.caption("🔻 Stakes halved · 📈 Under 2.5 edge ≥ 8%")
+
+                    exclude_uefa_qual = st.checkbox(
+                        "Exclude UEFA Qualifiers",
+                        value=True,
+                        help=(
+                            "Removes CL/EL/ECL qualifying rounds.\n"
+                            "Inter-league knockout football has high variance\n"
+                            "and poor cross-league model calibration."
+                        ),
+                        key="exclude_uefa_qual"
+                    )
+                    if exclude_uefa_qual:
+                        st.caption("🚫 CL/EL/ECL qualifying excluded")
+
                 filtered_fix = fix_df.copy()
                 n_fetched = len(filtered_fix)
 
@@ -388,7 +418,20 @@ def render_ml_predictions_tab():
 
                 if sel_league != "All Leagues":
                     filtered_fix = filtered_fix[filtered_fix['league'] == sel_league]
+
+                # UEFA Qualifier filter: knock out CL/EL/ECL qualifying rounds
+                _UEFA_QUAL_PATTERNS = [
+                    'UEFA CL Qualifying', 'UEFA EL Qualifying', 'UEFA ECL Qualifying',
+                    'Champions League Qualifying', 'Europa League Qualifying',
+                    'Conference League Qualifying',
+                ]
+                if exclude_uefa_qual and 'league' in filtered_fix.columns:
+                    _qual_mask = filtered_fix['league'].apply(
+                        lambda lg: any(p.lower() in str(lg).lower() for p in ['qualifying', 'cl qual', 'el qual', 'ecl qual'])
+                    )
+                    filtered_fix = filtered_fix[~_qual_mask]
                 n_after_league = len(filtered_fix)
+
 
                 # Count kicked-off (for display only — actual skip happens in loop)
                 now_ts = pd.Timestamp.now()
@@ -1202,7 +1245,10 @@ def render_ml_predictions_tab():
                         edge_u25 = (model_prob_u25 - imp_u25) if pd.notna(imp_u25) else np.nan
 
                         val_o25 = pd.notna(edge_o25) and edge_o25 >= edge_filter
-                        val_u25 = pd.notna(edge_u25) and edge_u25 >= edge_filter
+                        # Early-season mode: raise Under 2.5 minimum edge to 8%
+                        # to combat poor defensive cohesion in Aug/Sep gameweeks
+                        _u25_edge_threshold = max(edge_filter, 0.08) if early_season_mode else edge_filter
+                        val_u25 = pd.notna(edge_u25) and edge_u25 >= _u25_edge_threshold
                         is_val = val_o25 or val_u25
 
                         if val_o25 and val_u25:
@@ -1232,6 +1278,10 @@ def render_ml_predictions_tab():
 
                         # Fix #4: Use user-specified bankroll for Kelly stake sizing
                         rec_k_stake = kelly_stake(best_prob, best_odds, user_bankroll) if pd.notna(best_odds) and best_odds > 1 else 10.0
+                        # Early-season dampener: halve stakes in Aug/Sep due to high
+                        # parameter uncertainty (new squads, summer transfers, no cohesion)
+                        if early_season_mode:
+                            rec_k_stake = round(rec_k_stake * 0.50, 2)
                     else:
                         model_prob_u25 = 1.0 - model_prob_o25 if pd.notna(model_prob_o25) else np.nan
                         edge_o25 = np.nan
@@ -1410,7 +1460,12 @@ def render_ml_predictions_tab():
                     fc2.metric("Implied Prob", f"{best_imp*100:.1f}%" if pd.notna(best_imp) else "—")
                     fc3.metric("Model Prob", f"{best_prob*100:.1f}%" if (has_data and pd.notna(best_prob)) else "N/A (No Data)")
                     fc4.metric(f"Edge % ({best_market})", f"{best_edge*100:+.1f}%" if (has_data and pd.notna(best_edge) and not has_no_odds) else "—", delta=f"{best_edge*100:+.1f}%" if (has_data and is_val) else None)
-                    fc5.metric("Quarter-Kelly Stake", f"£{rec_k_stake:.2f}" if (has_data and is_val) else "—")
+                    fc5.metric(
+                        "Quarter-Kelly Stake",
+                        f"£{rec_k_stake:.2f}" if (has_data and is_val) else "—",
+                        delta="⚠️ 50% dampened" if (early_season_mode and has_data and is_val) else None,
+                        delta_color="off" if early_season_mode else "normal"
+                    )
 
                     with fc6:
                         if not has_data:
