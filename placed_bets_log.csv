@@ -73,38 +73,38 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-08-15 12:55:26,2026-08-15,Championship,Portsmouth,QPR,Under 2.5,1.79,🎯 Auto (Dual Ensemble),72.1,55.9,16.2,50.0,,LOSS,-50.0,158.44
 2026-08-15 12:55:51,2026-08-15,League 2,Chesterfield,Fleetwood Town,Under 2.5,1.86,🎯 Auto (Dual Ensemble),68.7,53.8,15.0,50.0,,WIN,43.0,201.44
 2026-08-15 12:56:20,2026-08-15,Scottish League 1,Peterhead,East Fife,Over 2.5,1.98,🎯 Auto (Dual Ensemble),69.8,50.5,19.3,50.0,,WIN,49.0,250.44
-2026-08-15 12:56:36,2026-08-15,Scottish League 1,Alloa,Montrose,Over 2.5,1.87,🎯 Auto (Dual Ensemble),68.1,53.5,14.6,50.0,,WIN,0.0,250.44
-2026-08-15 12:57:27,2026-08-15,Scottish League 2,Forfar,Stirling,Over 2.5,1.84,🎯 Auto (Dual Ensemble),63.6,54.3,9.3,50.0,,PENDING,0.0,250.44
-2026-08-15 12:57:52,2026-08-15,League 2,Accrington,Colchester,Under 2.5,1.83,🎯 Auto (Dual Ensemble),63.3,54.6,8.7,47.88,,LOSS,-47.88,202.56
-2026-08-15 12:58:09,2026-08-15,League 2,Crawley Town,Crewe,Under 2.5,1.95,🎯 Auto (Dual Ensemble),63.1,51.3,11.8,50.0,,WIN,47.5,250.06
-2026-08-15 12:59:01,2026-08-15,League 1,Cambridge,Wigan,Over 2.5,2.3,🎯 Auto (Dual Ensemble),52.0,43.5,8.5,37.54,,WIN,48.8,298.86
-2026-08-15 12:59:27,2026-08-15,League 1,Bradford,Peterboro,Under 2.5,2.22,🎯 Auto (Dual Ensemble),53.3,45.0,8.3,37.75,,WIN,46.06,344.92
-2026-08-15 13:00:03,2026-08-15,Conference,Kidderminster,Eastleigh,Under 2.5,2.28,🎯 Auto (Dual Ensemble),51.4,43.9,7.5,33.41,,WIN,42.76,387.68
-2026-08-15 13:00:32,2026-08-15,Conference,Solihull,Boston Utd,Over 2.5,1.78,🎯 Auto (Dual Ensemble),63.8,56.2,7.6,43.55,,LOSS,-43.55,344.13
-2026-08-15 13:01:40,2026-08-15,Conference,Gateshead,Woking,Under 2.5,2.18,🎯 Auto (Dual Ensemble),53.1,45.9,7.2,33.44,,WIN,39.46,383.59
-2026-08-15 13:02:07,2026-08-15,League 2,Barnet,Salford,Under 2.5,1.96,🎯 Auto (Dual Ensemble),58.4,51.0,7.3,37.51,,LOSS,-37.51,346.08
-2026-08-15 13:03:12,2026-08-15,Segunda Division,Andorra,Ceuta,Under 2.5,2.1,🎯 Auto (Dual Ensemble),65.8,47.6,18.1,50.0,,LOSS,-50.0,296.08
-2026-08-15 16:52:12,2026-08-15,Super Lig,Kasimpasa,Trabzonspor,Under 2.5,1.97,🎯 Auto (Dual Ensemble),58.4,50.8,7.7,38.96,,WIN,37.79,333.87
-2026-08-15 16:52:33,2026-08-15,La_Liga,Alaves,Getafe,Over 2.5,3.45,🎯 Auto (Dual Ensemble),46.0,29.0,17.0,50.0,,WIN,122.5,456.37
-2026-08-15 16:53:11,2026-08-15,Eredivisie,Excelsior,PSV Eindhoven,Under 2.5,3.55,🎯 Auto (Dual Ensemble),39.5,28.2,11.3,39.37,,LOSS,-39.37,417.0
-2026-08-15 16:53:22,2026-08-15,Segunda Division,Oviedo,Granada,Under 2.5,1.64,🎯 Auto (Dual Ensemble),69.7,61.0,8.8,50.0,,WIN,32.0,449.0
-2026-08-15 17:46:40,2026-08-15,Liga Portugal,Rio Ave,Porto,Under 2.5,2.12,🎯 Auto (Dual Ensemble),59.7,47.2,12.5,50.0,,WIN,56.0,505.0
-2026-08-15 21:34:19,2026-08-16,USA (MLS),Orlando City SC,FC Cincinnati,Under 2.5,3.85,🎯 Auto (Dual Ensemble),38.7,26.0,12.7,43.06,,WIN,122.72,627.72
-2026-08-15 21:34:46,2026-08-16,Primera Division Chile,Everton de Vina,A. Italiano,Under 2.5,1.96,🎯 Auto (Dual Ensemble),58.4,51.0,7.4,37.64,,WIN,36.13,663.85
-2026-08-15 21:35:07,2026-08-16,Mexico,Atlas,Tigres UANL,Over 2.5,2.3,🎯 Auto (Dual Ensemble),65.4,43.5,21.9,50.0,,WIN,65.0,728.85
-2026-08-15 21:35:26,2026-08-16,Argentina,Platense,Boca Juniors,Under 2.5,1.47,🎯 Auto (Dixon-Coles Only),79.9,68.0,11.9,50.0,,WIN,23.5,752.35
-2026-08-15 21:35:47,2026-08-16,USA (MLS),Nashville SC,Inter Miami CF,Under 2.5,2.9,🎯 Auto (Dual Ensemble),41.8,34.5,7.3,28.02,,LOSS,-28.02,724.33
-2026-08-16 10:24:52,2026-08-16,Championship,Watford,Southampton,Under 2.5,2.22,🎯 Auto (Dual Ensemble),55.5,45.0,10.5,47.58,,LOSS,-47.58,676.75
-2026-08-16 10:25:46,2026-08-16,Uruguay,Progreso,Deportivo Maldonado,Over 2.5,2.26,🎯 Auto (Dual Ensemble),60.2,44.2,15.9,50.0,,LOSS,-50.0,626.75
-2026-08-16 10:26:07,2026-08-16,Liga Portugal,Nacional,Estoril,Over 2.5,1.99,🎯 Auto (Dual Ensemble),64.9,50.3,14.7,50.0,,LOSS,-50.0,576.75
-2026-08-16 10:26:35,2026-08-16,Norway,Molde,Tromso,Over 2.5,1.66,🎯 Auto (Dual Ensemble),71.0,60.2,10.8,50.0,,WIN,33.0,609.75
-2026-08-16 10:26:52,2026-08-16,Segunda Division,Eibar,Tenerife,Under 2.5,1.66,🎯 Auto (Dual Ensemble),70.4,60.2,10.2,50.0,,LOSS,-50.0,559.75
-2026-08-16 10:27:52,2026-08-16,Segunda Division,Burgos,Cordoba,Under 2.5,1.75,🎯 Auto (Dual Ensemble),73.0,57.1,15.8,50.0,,LOSS,-50.0,509.75
-2026-08-16 10:28:10,2026-08-16,Austria,Rapid Vienna,Grazer AK,Over 2.5,1.87,🎯 Auto (Dual Ensemble),68.5,53.5,15.0,50.0,,WIN,43.5,553.25
-2026-08-16 10:28:27,2026-08-16,Super Lig,Besiktas,Eyupspor,Under 2.5,2.6,🎯 Auto (Dual Ensemble),47.2,38.5,8.8,35.61,,WIN,56.98,610.23
-2026-08-16 10:28:39,2026-08-16,Brazil,Atlético-MG,Grêmio,Under 2.5,1.91,🎯 Auto (Dual Ensemble),69.7,52.4,17.4,50.0,,LOSS,-50.0,560.23
-2026-08-16 10:28:54,2026-08-16,Segunda Division,Las Palmas,Albacete,Under 2.5,1.9,🎯 Auto (Dual Ensemble),74.3,52.6,21.7,50.0,,LOSS,-50.0,510.23
-2026-08-16 10:29:11,2026-08-16,Liga Portugal,Sp Braga,Gil Vicente,Over 2.5,2.04,🎯 Auto (Dual Ensemble),60.4,49.0,11.4,50.0,,LOSS,-50.0,460.23
-2026-08-16 10:29:33,2026-08-16,Brazil,Vitória,Botafogo,Under 2.5,1.86,🎯 Auto (Dual Ensemble),71.4,53.8,17.7,50.0,,WIN,43.0,503.23
-2026-08-16 10:29:47,2026-08-16,USA (MLS),Chicago Fire FC,Portland Timbers,Under 2.5,3.55,🎯 Auto (Dual Ensemble),40.0,28.2,11.8,41.11,,LOSS,-41.11,462.12
-2026-08-16 10:30:01,2026-08-16,Brazil,Corinthians,Cruzeiro,Under 2.5,1.59,🎯 Auto (Dual Ensemble),70.1,62.9,7.2,48.59,,LOSS,-48.59,413.53
+2026-08-15 12:56:36,2026-08-15,Scottish League 1,Alloa,Montrose,Over 2.5,1.87,🎯 Auto (Dual Ensemble),68.1,53.5,14.6,50.0,,WIN,43.5,293.94
+2026-08-15 12:57:27,2026-08-15,Scottish League 2,Forfar,Stirling,Over 2.5,1.84,🎯 Auto (Dual Ensemble),63.6,54.3,9.3,50.0,,WIN,0.0,293.94
+2026-08-15 12:57:52,2026-08-15,League 2,Accrington,Colchester,Under 2.5,1.83,🎯 Auto (Dual Ensemble),63.3,54.6,8.7,47.88,,LOSS,-47.88,246.06
+2026-08-15 12:58:09,2026-08-15,League 2,Crawley Town,Crewe,Under 2.5,1.95,🎯 Auto (Dual Ensemble),63.1,51.3,11.8,50.0,,WIN,47.5,293.56
+2026-08-15 12:59:01,2026-08-15,League 1,Cambridge,Wigan,Over 2.5,2.3,🎯 Auto (Dual Ensemble),52.0,43.5,8.5,37.54,,WIN,48.8,342.36
+2026-08-15 12:59:27,2026-08-15,League 1,Bradford,Peterboro,Under 2.5,2.22,🎯 Auto (Dual Ensemble),53.3,45.0,8.3,37.75,,WIN,46.06,388.42
+2026-08-15 13:00:03,2026-08-15,Conference,Kidderminster,Eastleigh,Under 2.5,2.28,🎯 Auto (Dual Ensemble),51.4,43.9,7.5,33.41,,WIN,42.76,431.18
+2026-08-15 13:00:32,2026-08-15,Conference,Solihull,Boston Utd,Over 2.5,1.78,🎯 Auto (Dual Ensemble),63.8,56.2,7.6,43.55,,LOSS,-43.55,387.63
+2026-08-15 13:01:40,2026-08-15,Conference,Gateshead,Woking,Under 2.5,2.18,🎯 Auto (Dual Ensemble),53.1,45.9,7.2,33.44,,WIN,39.46,427.09
+2026-08-15 13:02:07,2026-08-15,League 2,Barnet,Salford,Under 2.5,1.96,🎯 Auto (Dual Ensemble),58.4,51.0,7.3,37.51,,LOSS,-37.51,389.58
+2026-08-15 13:03:12,2026-08-15,Segunda Division,Andorra,Ceuta,Under 2.5,2.1,🎯 Auto (Dual Ensemble),65.8,47.6,18.1,50.0,,LOSS,-50.0,339.58
+2026-08-15 16:52:12,2026-08-15,Super Lig,Kasimpasa,Trabzonspor,Under 2.5,1.97,🎯 Auto (Dual Ensemble),58.4,50.8,7.7,38.96,,WIN,37.79,377.37
+2026-08-15 16:52:33,2026-08-15,La_Liga,Alaves,Getafe,Over 2.5,3.45,🎯 Auto (Dual Ensemble),46.0,29.0,17.0,50.0,,WIN,122.5,499.87
+2026-08-15 16:53:11,2026-08-15,Eredivisie,Excelsior,PSV Eindhoven,Under 2.5,3.55,🎯 Auto (Dual Ensemble),39.5,28.2,11.3,39.37,,LOSS,-39.37,460.5
+2026-08-15 16:53:22,2026-08-15,Segunda Division,Oviedo,Granada,Under 2.5,1.64,🎯 Auto (Dual Ensemble),69.7,61.0,8.8,50.0,,WIN,32.0,492.5
+2026-08-15 17:46:40,2026-08-15,Liga Portugal,Rio Ave,Porto,Under 2.5,2.12,🎯 Auto (Dual Ensemble),59.7,47.2,12.5,50.0,,WIN,56.0,548.5
+2026-08-15 21:34:19,2026-08-16,USA (MLS),Orlando City SC,FC Cincinnati,Under 2.5,3.85,🎯 Auto (Dual Ensemble),38.7,26.0,12.7,43.06,,WIN,122.72,671.22
+2026-08-15 21:34:46,2026-08-16,Primera Division Chile,Everton de Vina,A. Italiano,Under 2.5,1.96,🎯 Auto (Dual Ensemble),58.4,51.0,7.4,37.64,,WIN,36.13,707.35
+2026-08-15 21:35:07,2026-08-16,Mexico,Atlas,Tigres UANL,Over 2.5,2.3,🎯 Auto (Dual Ensemble),65.4,43.5,21.9,50.0,,WIN,65.0,772.35
+2026-08-15 21:35:26,2026-08-16,Argentina,Platense,Boca Juniors,Under 2.5,1.47,🎯 Auto (Dixon-Coles Only),79.9,68.0,11.9,50.0,,WIN,23.5,795.85
+2026-08-15 21:35:47,2026-08-16,USA (MLS),Nashville SC,Inter Miami CF,Under 2.5,2.9,🎯 Auto (Dual Ensemble),41.8,34.5,7.3,28.02,,LOSS,-28.02,767.83
+2026-08-16 10:24:52,2026-08-16,Championship,Watford,Southampton,Under 2.5,2.22,🎯 Auto (Dual Ensemble),55.5,45.0,10.5,47.58,,LOSS,-47.58,720.25
+2026-08-16 10:25:46,2026-08-16,Uruguay,Progreso,Deportivo Maldonado,Over 2.5,2.26,🎯 Auto (Dual Ensemble),60.2,44.2,15.9,50.0,,LOSS,-50.0,670.25
+2026-08-16 10:26:07,2026-08-16,Liga Portugal,Nacional,Estoril,Over 2.5,1.99,🎯 Auto (Dual Ensemble),64.9,50.3,14.7,50.0,,LOSS,-50.0,620.25
+2026-08-16 10:26:35,2026-08-16,Norway,Molde,Tromso,Over 2.5,1.66,🎯 Auto (Dual Ensemble),71.0,60.2,10.8,50.0,,WIN,33.0,653.25
+2026-08-16 10:26:52,2026-08-16,Segunda Division,Eibar,Tenerife,Under 2.5,1.66,🎯 Auto (Dual Ensemble),70.4,60.2,10.2,50.0,,LOSS,-50.0,603.25
+2026-08-16 10:27:52,2026-08-16,Segunda Division,Burgos,Cordoba,Under 2.5,1.75,🎯 Auto (Dual Ensemble),73.0,57.1,15.8,50.0,,LOSS,-50.0,553.25
+2026-08-16 10:28:10,2026-08-16,Austria,Rapid Vienna,Grazer AK,Over 2.5,1.87,🎯 Auto (Dual Ensemble),68.5,53.5,15.0,50.0,,WIN,43.5,596.75
+2026-08-16 10:28:27,2026-08-16,Super Lig,Besiktas,Eyupspor,Under 2.5,2.6,🎯 Auto (Dual Ensemble),47.2,38.5,8.8,35.61,,WIN,56.98,653.73
+2026-08-16 10:28:39,2026-08-16,Brazil,Atlético-MG,Grêmio,Under 2.5,1.91,🎯 Auto (Dual Ensemble),69.7,52.4,17.4,50.0,,LOSS,-50.0,603.73
+2026-08-16 10:28:54,2026-08-16,Segunda Division,Las Palmas,Albacete,Under 2.5,1.9,🎯 Auto (Dual Ensemble),74.3,52.6,21.7,50.0,,LOSS,-50.0,553.73
+2026-08-16 10:29:11,2026-08-16,Liga Portugal,Sp Braga,Gil Vicente,Over 2.5,2.04,🎯 Auto (Dual Ensemble),60.4,49.0,11.4,50.0,,LOSS,-50.0,503.73
+2026-08-16 10:29:33,2026-08-16,Brazil,Vitória,Botafogo,Under 2.5,1.86,🎯 Auto (Dual Ensemble),71.4,53.8,17.7,50.0,,WIN,43.0,546.73
+2026-08-16 10:29:47,2026-08-16,USA (MLS),Chicago Fire FC,Portland Timbers,Under 2.5,3.55,🎯 Auto (Dual Ensemble),40.0,28.2,11.8,41.11,,LOSS,-41.11,505.62
+2026-08-16 10:30:01,2026-08-16,Brazil,Corinthians,Cruzeiro,Under 2.5,1.59,🎯 Auto (Dual Ensemble),70.1,62.9,7.2,48.59,,LOSS,-48.59,457.03
