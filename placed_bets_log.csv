@@ -110,4 +110,5 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-08-16 10:30:01,2026-08-16,Brazil,Corinthians,Cruzeiro,Under 2.5,1.59,🎯 Auto (Dual Ensemble),70.1,62.9,7.2,48.59,,LOSS,-48.59,499.03
 2026-08-17 10:03:34,2026-08-17,Championship,Cardiff,Wrexham,Under 2.5,2.16,🎯 Auto (Dual Ensemble),67.8,46.3,21.5,50.0,,PENDING,0.0,499.03
 2026-08-17 10:04:25,2026-08-17,Segunda Division,Almeria,Eldense,Under 2.5,2.36,🎯 Auto (Dual Ensemble),62.8,42.4,20.4,50.0,,PENDING,0.0,499.03
-2026-08-17 10:04:42,2026-08-17,Argentina,Lanús,Independiente,Under 2.5,1.49,🎯 Auto (Dixon-Coles Only),76.9,67.1,9.8,50.0,,PENDING,0.0,0.0
+2026-08-17 10:04:42,2026-08-17,Argentina,Lanús,Independiente,Under 2.5,1.49,🎯 Auto (Dixon-Coles Only),76.9,67.1,9.8,50.0,,PENDING,0.0,499.03
+2026-08-17 15:36:03,2026-08-17,Ukraine,Polessya,Zorya Luhansk,Under 2.5,2.2,🎯 Auto (Dixon-Coles Only),59.7,45.5,14.2,50.0,,PENDING,0.0,0.0
