@@ -113,8 +113,8 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-08-17 10:04:42,2026-08-17,Argentina,Lanús,Independiente,Under 2.5,1.49,🎯 Auto (Dixon-Coles Only),76.9,67.1,9.8,50.0,,LOSS,-50.0,457.03
 2026-08-17 15:36:03,2026-08-17,Ukraine,Polessya,Zorya Luhansk,Under 2.5,2.2,🎯 Auto (Dixon-Coles Only),59.7,45.5,14.2,50.0,,LOSS,-50.0,407.03
 2026-08-17 15:36:12,2026-08-17,Finland,Gnistan,Ilves,Under 2.5,2.52,🎯 Auto (Dual Ensemble),53.7,39.7,14.0,50.0,,LOSS,-50.0,357.03
-2026-08-17 15:36:34,2026-08-17,Hungary,Zalaegerszegi TE,Ferencvarosi TC,Under 2.5,2.48,🎯 Auto (Dixon-Coles Only),53.7,40.3,13.4,50.0,,WIN,0.0,357.03
-2026-08-17 15:37:00,2026-08-17,Denmark,Brondby,Sonderjyske,Under 2.5,2.56,🎯 Auto (Dual Ensemble),57.8,39.1,18.7,50.0,,PENDING,0.0,357.03
-2026-08-17 15:37:28,2026-08-17,Serbia,Novi Pazar,Vojvodina,Over 2.5,1.71,🎯 Auto (Dual Ensemble),66.9,58.5,8.4,50.0,,PENDING,0.0,357.03
-2026-08-17 15:37:49,2026-08-17,Romania,FCSB,FC Botosani,Under 2.5,2.56,🎯 Auto (Dixon-Coles Only),59.7,39.1,20.6,50.0,,PENDING,0.0,357.03
-2026-08-17 23:18:05,2026-08-18,Mexico,Necaxa,León,Over 2.5,1.85,🎯 Auto (Dual Ensemble),61.8,53.9,7.9,21.07,,PENDING,0.0,357.03
+2026-08-17 15:36:34,2026-08-17,Hungary,Zalaegerszegi TE,Ferencvarosi TC,Under 2.5,2.48,🎯 Auto (Dixon-Coles Only),53.7,40.3,13.4,50.0,,WIN,74.0,431.03
+2026-08-17 15:37:00,2026-08-17,Denmark,Brondby,Sonderjyske,Under 2.5,2.56,🎯 Auto (Dual Ensemble),57.8,39.1,18.7,50.0,,LOSS,0.0,431.03
+2026-08-17 15:37:28,2026-08-17,Serbia,Novi Pazar,Vojvodina,Over 2.5,1.71,🎯 Auto (Dual Ensemble),66.9,58.5,8.4,50.0,,PENDING,0.0,431.03
+2026-08-17 15:37:49,2026-08-17,Romania,FCSB,FC Botosani,Under 2.5,2.56,🎯 Auto (Dixon-Coles Only),59.7,39.1,20.6,50.0,,PENDING,0.0,431.03
+2026-08-17 23:18:05,2026-08-18,Mexico,Necaxa,León,Over 2.5,1.85,🎯 Auto (Dual Ensemble),61.8,53.9,7.9,21.07,,PENDING,0.0,431.03
