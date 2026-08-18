@@ -406,52 +406,62 @@ def fetch_upcoming_fixtures() -> pd.DataFrame:
         espn_rows = []
         for slug, lg_name in espn_slugs.items():
             try:
-                r = requests.get(
-                    f"https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/scoreboard",
-                    timeout=4
-                )
-                if r.status_code != 200:
-                    continue
-                for ev in r.json().get('events', []):
-                    # Only include events not yet completed
-                    status_type = ev.get('status', {}).get('type', {}).get('state', '')
-                    if status_type == 'post':   # already finished
-                        continue
-                    comps = ev.get('competitions', [{}])[0].get('competitors', [])
-                    if len(comps) < 2:
-                        continue
-                    h_name = next(
-                        (c.get('team', {}).get('displayName') for c in comps if c.get('homeAway') == 'home'),
-                        comps[0].get('team', {}).get('displayName')
+                # FIX: Must pass explicit dates= for each day in the window.
+                # Without dates=, ESPN returns only today's/next matchday fixtures,
+                # causing all weekend games to be invisible until the day before.
+                day_rows = []
+                for day_offset in range(8):  # today + 7 days
+                    check_date = today + pd.Timedelta(days=day_offset)
+                    date_str = check_date.strftime('%Y%m%d')
+                    r = requests.get(
+                        f"https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/scoreboard",
+                        params={"dates": date_str, "limit": 50},
+                        timeout=4
                     )
-                    a_name = next(
-                        (c.get('team', {}).get('displayName') for c in comps if c.get('homeAway') == 'away'),
-                        comps[1].get('team', {}).get('displayName')
-                    )
-                    raw_dt = ev.get('date', '')
-                    ev_date = pd.to_datetime(raw_dt, utc=True, errors='coerce')
-                    if pd.isnull(ev_date):
+                    if r.status_code != 200:
                         continue
-                    # Convert UTC → UK local time (BST in summer, GMT in winter)
-                    # tz_convert shifts the timestamp correctly; tz_localize(None) then
-                    # drops the tz label so downstream date comparisons work normally.
-                    try:
-                        ev_date = ev_date.tz_convert('Europe/London').tz_localize(None)
-                    except Exception:
-                        ev_date = ev_date.tz_localize(None)  # fallback: keep as UTC
-                    # Strict window: today to +7 days
-                    if not (today <= ev_date.normalize() <= max_date):
-                        continue
-                    espn_rows.append({
-                        'league':        lg_name,
-                        'Date':          ev_date.normalize(),
-                        'Time':          ev_date.strftime('%H:%M'),
-                        'HomeTeam':      h_name,
-                        'AwayTeam':      a_name,
-                        'over25_odds':   np.nan,   # No real odds from ESPN — will be filled by Betfair or suppressed
-                        'under25_odds':  np.nan,
-                        'draw_odds':     np.nan,
-                    })
+                    for ev in r.json().get('events', []):
+                        status_type = ev.get('status', {}).get('type', {}).get('state', '')
+                        if status_type == 'post':   # already finished
+                            continue
+                        comps = ev.get('competitions', [{}])[0].get('competitors', [])
+                        if len(comps) < 2:
+                            continue
+                        h_name = next(
+                            (c.get('team', {}).get('displayName') for c in comps if c.get('homeAway') == 'home'),
+                            comps[0].get('team', {}).get('displayName')
+                        )
+                        a_name = next(
+                            (c.get('team', {}).get('displayName') for c in comps if c.get('homeAway') == 'away'),
+                            comps[1].get('team', {}).get('displayName')
+                        )
+                        raw_dt = ev.get('date', '')
+                        ev_date = pd.to_datetime(raw_dt, utc=True, errors='coerce')
+                        if pd.isnull(ev_date):
+                            continue
+                        try:
+                            ev_date = ev_date.tz_convert('Europe/London').tz_localize(None)
+                        except Exception:
+                            ev_date = ev_date.tz_localize(None)
+                        if not (today <= ev_date.normalize() <= max_date):
+                            continue
+                        day_rows.append({
+                            'league':        lg_name,
+                            'Date':          ev_date.normalize(),
+                            'Time':          ev_date.strftime('%H:%M'),
+                            'HomeTeam':      h_name,
+                            'AwayTeam':      a_name,
+                            'over25_odds':   np.nan,
+                            'under25_odds':  np.nan,
+                            'draw_odds':     np.nan,
+                        })
+                # Deduplicate within the same league (same fixture can appear on multiple date queries)
+                seen = set()
+                for row in day_rows:
+                    key = (row['HomeTeam'], row['AwayTeam'], str(row['Date'].date()))
+                    if key not in seen:
+                        seen.add(key)
+                        espn_rows.append(row)
             except Exception:
                 continue
         if espn_rows:
