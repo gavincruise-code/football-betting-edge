@@ -161,11 +161,17 @@ def get_league_id(league_name):
     return LEAGUE_ID_MAP.get(league_name)
 
 
-def fetch_league_history(league_name, seasons=None, min_matches=50):
+def fetch_league_history(league_name, seasons=None, min_matches=50, max_seasons=5):
     """
     Fetch historical results for a league from api-football.com.
     Returns DataFrame with columns: Date, HomeTeam, AwayTeam, FTHG, FTAG, FTR
     Returns empty DataFrame if league is unsupported or API fails.
+
+    FIX: Previously stopped fetching once min_matches rows were accumulated —
+    this caused 2026 data (loaded first) to satisfy the threshold, so 2025
+    and 2024 were never fetched, leaving a >1-year hole in team histories.
+    Now loads all available seasons (up to max_seasons) then returns the
+    full combined dataset sorted by date.
     """
     api_key = os.getenv("API_FOOTBALL_KEY", "")
     if not api_key:
@@ -174,18 +180,18 @@ def fetch_league_history(league_name, seasons=None, min_matches=50):
     league_id = get_league_id(league_name)
     if league_id is None:
         return pd.DataFrame()
-    seasons_to_try = seasons or _SEASONS
+    seasons_to_try = (seasons or _SEASONS)[:max_seasons]
     all_dfs = []
     for season in seasons_to_try:
         raw = _fetch_season(league_id, season)
         df = _fixtures_to_df(raw)
         if not df.empty:
             all_dfs.append(df)
-        if sum(len(d) for d in all_dfs) >= min_matches:
-            break
     if not all_dfs:
         return pd.DataFrame()
-    return pd.concat(all_dfs, ignore_index=True).sort_values("Date").reset_index(drop=True)
+    combined = pd.concat(all_dfs, ignore_index=True).sort_values("Date").reset_index(drop=True)
+    return combined
+
 
 
 def supported_leagues():
