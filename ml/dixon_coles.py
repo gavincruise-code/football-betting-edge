@@ -119,9 +119,19 @@ def fit_dixon_coles(
         penalty = 100.0 * (np.sum(att) ** 2)
         return -log_l + penalty
 
-    res = minimize(neg_log_likelihood, init_params, method='SLSQP', options={'maxiter': 100})
+    res = minimize(neg_log_likelihood, init_params, method='SLSQP', options={'maxiter': 200})
 
-    if not res.success and not res.fun:
+    # FIX N2: Stricter convergence check.
+    # Previous guard: `not res.success and not res.fun` almost never triggered —
+    # a partially converged result could slip through with a near-zero likelihood.
+    # Now: treat any non-convergent run as failed and return {'converged': False}
+    # so callers fall back to Poisson-only rather than using potentially corrupted params.
+    if not res.success:
+        logger.warning(
+            "Dixon-Coles optimiser failed to converge for %d teams (%d matches). "
+            "Message: %s. Falling back to Poisson-only for this fixture.",
+            n_teams, len(matches_df), res.message
+        )
         return {'converged': False}
 
     params = res.x
@@ -147,12 +157,17 @@ def predict_score_probs(
 ) -> np.ndarray:
     """
     Generate score probability matrix (max_goals+1 x max_goals+1).
+
+    Returns None if params are missing or unconverged — callers must handle
+    this case explicitly. Previously returned a uniform matrix (every scoreline
+    equally likely) which silently corrupted Over/Under predictions.
     """
     matrix = np.zeros((max_goals + 1, max_goals + 1))
     if not params or not params.get('converged', False):
-        # Fallback uniform / baseline
-        matrix.fill(1.0 / ((max_goals + 1) ** 2))
-        return matrix
+        # FIX N2: Return None instead of uniform fallback.
+        # The uniform matrix (1/81 per scoreline) assigned the same probability
+        # to 0-0 and 6-6, completely corrupting the Over 2.5 estimate.
+        return None
 
     home_adv = params['home_adv']
     rho = params['rho']
@@ -214,16 +229,22 @@ def predict_over25(params: Dict, home_team: str, away_team: str) -> float:
     return max(0.05, min(0.95, 1.0 - p_under25))
 
 def predict_draw(params: Dict, home_team: str, away_team: str) -> float:
-    """Calculates P(Draw) from Dixon-Coles matrix."""
+    """Calculates P(Draw) from Dixon-Coles matrix. Returns NaN if model unconverged."""
     matrix = predict_score_probs(params, home_team, away_team)
+    if matrix is None:
+        return float('nan')
     prob = sum(matrix[k, k] for k in range(matrix.shape[0]))
     return float(prob)
 
 def predict_match_outcome(params: Dict, home_team: str, away_team: str) -> Dict[str, float]:
     """
     Returns full match prediction probabilities.
+    Returns dict of NaN values if Dixon-Coles failed to converge.
     """
     matrix = predict_score_probs(params, home_team, away_team)
+    if matrix is None:
+        return {'home_win': float('nan'), 'draw': float('nan'),
+                'away_win': float('nan'), 'over25': float('nan'), 'under25': float('nan')}
     home_win = float(np.sum(np.tril(matrix, -1)))
     draw = float(np.sum(np.diag(matrix)))
     away_win = float(np.sum(np.triu(matrix, 1)))

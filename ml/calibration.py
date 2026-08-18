@@ -115,13 +115,18 @@ def kelly_stake(
     decimal_odds: float,
     bankroll: float,
     fraction: float = KELLY_FRACTION,
-    max_pct: float = KELLY_MAX_PCT
+    max_pct: float = KELLY_MAX_PCT,
+    max_abs_stake: float = 500.0,   # FIX N6: hard ceiling in £ regardless of bankroll
 ) -> float:
     """
     Calculates Quarter-Kelly Criterion stake in GBP.
-    
+
     Full Kelly fraction f* = (b*p - q) / b
     where b = decimal_odds - 1, p = model_prob, q = 1 - p
+
+    max_abs_stake caps the recommendation at £500 by default.
+    This prevents extreme recommendations if a large bankroll is entered
+    (e.g. £100,000 bankroll → 5% cap = £5,000 stake, above Betfair liquidity).
     """
     if decimal_odds <= 1.0 or model_prob <= 0.0 or bankroll <= 0.0:
         return 0.0
@@ -137,4 +142,6 @@ def kelly_stake(
     f_adj = f_star * fraction
     f_adj = min(f_adj, max_pct)
 
-    return round(bankroll * f_adj, 2)
+    raw_stake = bankroll * f_adj
+    # FIX N6: Apply hard absolute ceiling
+    return round(min(raw_stake, max_abs_stake), 2)

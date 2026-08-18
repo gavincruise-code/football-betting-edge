@@ -106,7 +106,13 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # -----------------------------------------
 try:
     import app_ml
-    importlib.reload(app_ml)
+    # FIX N3: Only reload app_ml once per session, not on every Streamlit rerun.
+    # importlib.reload() re-executes the entire 1600-line module on every user
+    # interaction (slider move, button click, tab switch) adding ~0.5-1s latency
+    # and risking session state resets mid-session.
+    if not st.session_state.get('_app_ml_loaded'):
+        importlib.reload(app_ml)
+        st.session_state['_app_ml_loaded'] = True
     render_ml_backtester_tab = app_ml.render_ml_backtester_tab
     render_ml_predictions_tab = app_ml.render_ml_predictions_tab
 except Exception as e:
@@ -137,12 +143,15 @@ try:
     _age = cache_age_hours(_cache)
 
     if _age is None:
-        # First run — no cache exists yet
+        # FIX N5: Guard against repeated calibration spawns.
+        # Without this flag, every Streamlit rerun (including every user click)
+        # could spawn a new calibration thread — each consuming 2-4 GB RAM peak,
+        # causing OOM crashes on cloud containers (Render/Railway free tier = 512 MB).
         if not st.session_state.get('_calibration_started'):
             st.session_state['_calibration_started'] = True
             _run_calibration_background()
         st.info(
-            "⏳ **First-run calibration in progress** — the model is backtesting all 34 leagues "
+            "⏳ **First-run calibration in progress** — the model is backtesting all leagues "
             "in the background to determine optimal strategies. This takes ~3 minutes and only "
             "happens once. The scanner is fully usable in the meantime.",
             icon="🔄",

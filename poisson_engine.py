@@ -40,9 +40,19 @@ def prob_under15(lam: float) -> float:
     return poisson_cdf(1, lam)
 
 def implied_probability(decimal_odds: float) -> float:
-    """Returns 1/odds. Returns 1.0 if odds <= 1.0."""
+    """
+    Returns fair implied probability = 1 / decimal_odds.
+
+    Returns float('nan') for invalid odds (≤ 1.0 or non-finite).
+    NaN propagates correctly through edge calculations so corrupted
+    data rows are treated as 'no valid odds' rather than masking as
+    a 100% implied probability (the previous behaviour).
+    """
+    import math
+    if decimal_odds is None or not math.isfinite(float(decimal_odds)):
+        return float('nan')
     if decimal_odds <= 1.0:
-        return 1.0
+        return float('nan')
     return 1.0 / decimal_odds
 
 def has_edge(model_prob: float, implied_prob: float, margin: float = 0.05) -> bool:

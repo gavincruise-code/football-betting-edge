@@ -142,30 +142,22 @@ def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     avail_away = [c for c in away_cols if c in df.columns]
     df['away_odds'] = df[avail_away].apply(pd.to_numeric, errors='coerce').max(axis=1) if avail_away else np.nan
 
-    # Impute missing over25_odds & under25_odds for global leagues (ARG, USA, BRA, MEX, JPN, CHN, etc.)
-    missing_ou = df['over25_odds'].isna() | (df['over25_odds'] <= 1.0)
-    if missing_ou.any():
-        try:
-            from poisson_engine import prob_over_n_goals
-            if 'FTHG' in df.columns and 'FTAG' in df.columns:
-                tot_g = (df['FTHG'].fillna(1.2) + df['FTAG'].fillna(1.0)).values
-            else:
-                tot_g = np.full(len(df), 2.4)
-
-            shifted_g = pd.Series(tot_g).shift(1)
-            rolling_g = shifted_g.rolling(50, min_periods=5).mean().fillna(2.4).values
-
-            o25_p = np.array([prob_over_n_goals(lam, 2) for lam in rolling_g])
-            u25_p = np.maximum(0.01, 1.0 - o25_p)
-
-            # Bookmaker margin ~ 5%
-            est_o = np.round(1.0 / (o25_p * 1.025), 2)
-            est_u = np.round(1.0 / (u25_p * 1.025), 2)
-
-            df.loc[missing_ou, 'over25_odds'] = np.maximum(1.10, est_o[missing_ou])
-            df.loc[missing_ou, 'under25_odds'] = np.maximum(1.10, est_u[missing_ou])
-        except Exception:
-            pass
+    # FIX N1: Do NOT impute synthetic odds for global leagues.
+    # Previously this section invented Over/Under odds from rolling Poisson estimates
+    # for leagues without football-data.co.uk bookmaker columns (ARG, USA, BRA, MEX,
+    # JPN, CHN, KOR etc.). This caused the backtester and league calibrator to measure
+    # "edge" against odds the model itself generated — a circular, meaningless comparison.
+    #
+    # Correct behaviour: leave over25_odds / under25_odds as NaN where no real
+    # bookmaker data exists. The backtester skips NaN rows. The live scanner uses
+    # real Betfair Exchange prices and is unaffected.
+    #
+    # Leagues affected (no odds in football-data.co.uk CSVs):
+    #   Argentina, USA (MLS), Brazil, Mexico, Japan, China, Korea, India,
+    #   Saudi Arabia, Australia, Scandinavia (API-Football only)
+    # These leagues can still be scanned live (Betfair has prices) but their
+    # backtest ROI figures and auto-strategy selections are now correctly
+    # reported as "insufficient historical odds data".
 
     # Sort by date
     if 'Date' in df.columns:

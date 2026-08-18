@@ -128,8 +128,18 @@ CACHE_FILE = os.path.join(
 # Helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _pick_strategy(avg_goals: float, draw_rate: float, roi: float) -> str:
-    """Return the recommended scanner strategy given league characteristics."""
+def _pick_strategy(avg_goals: float, draw_rate: float, roi: float, n_matches: int = 999) -> str:
+    """Return the recommended scanner strategy given league characteristics.
+
+    FIX N4: Minimum data threshold enforced before allowing XGBoost strategies.
+    XGBoost requires substantial data to generalise — with < 300 completed matches
+    it tends to memorise historical noise rather than learn genuine patterns.
+    Leagues below threshold default to Dixon-Coles Only regardless of goal averages.
+    """
+    # FIX N4: Insufficient data → always Dixon-Coles (safer, fewer parameters)
+    if n_matches < 300:
+        return "Dixon-Coles Only"
+
     # Deeply negative ROI AND very high-scoring → try XGBoost
     if roi < -15 and avg_goals >= 2.9:
         return "XGBoost ML Only"
@@ -245,7 +255,7 @@ def calibrate_all_leagues(
             sample = completed.tail(n_matches)
             bt = run_backtest(sample, edge_margin=edge_margin, stake=stake)
 
-            strategy    = _pick_strategy(avg_goals, draw_rate, bt.roi)
+            strategy    = _pick_strategy(avg_goals, draw_rate, bt.roi, n_matches=len(completed))
             min_edge    = _recommended_edge(bt.roi)
 
             # Preserve xgb_model_name from train_all_leagues.py if it exists
