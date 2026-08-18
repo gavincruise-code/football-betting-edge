@@ -66,7 +66,7 @@ LEAGUE_ID_MAP = {
     "Australia": 188, "A-League": 188,
 }
 
-_SEASONS = [2024, 2023, 2022, 2021, 2020]
+_SEASONS = list(range(datetime.now().year, datetime.now().year - 5, -1))
 
 
 def _cache_path(league_id, season):
@@ -108,6 +108,17 @@ def _fetch_season(league_id, season):
             return []  # Do not write to cache
 
         fixtures = data.get("response", [])
+
+        # FIX H6: Empty response (valid JSON but zero fixtures) must not be cached —
+        # this happens when the season hasn't started yet or the wrong season year
+        # is requested. Caching [] locks in missing data for 3 days.
+        if not fixtures:
+            log.debug(
+                "API-Football returned 0 fixtures for league=%s season=%s — NOT caching empty result.",
+                league_id, season
+            )
+            return []
+
         with open(path, "w", encoding="utf-8") as f:
             json.dump(fixtures, f)
         remaining = int(resp.headers.get("x-ratelimit-requests-remaining", 100))
@@ -117,6 +128,7 @@ def _fetch_season(league_id, season):
     except Exception as exc:
         log.warning("API-Football fetch failed league=%s season=%s: %s", league_id, season, exc)
         return []
+
 
 
 def _fixtures_to_df(fixtures):

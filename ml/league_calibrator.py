@@ -135,13 +135,18 @@ def _pick_strategy(avg_goals: float, draw_rate: float, roi: float, n_matches: in
     XGBoost requires substantial data to generalise — with < 300 completed matches
     it tends to memorise historical noise rather than learn genuine patterns.
     Leagues below threshold default to Dixon-Coles Only regardless of goal averages.
+
+    NOTE: roi is stored as a decimal fraction (e.g. -0.08 = 8% loss). Convert to
+    percent before comparing against the named thresholds.
     """
+    roi_pct = roi * 100  # convert fraction → percent for threshold comparisons
+
     # FIX N4: Insufficient data → always Dixon-Coles (safer, fewer parameters)
     if n_matches < 300:
         return "Dixon-Coles Only"
 
     # Deeply negative ROI AND very high-scoring → try XGBoost
-    if roi < -15 and avg_goals >= 2.9:
+    if roi_pct < -15 and avg_goals >= 2.9:
         return "XGBoost ML Only"
 
     # Low-scoring / tactical leagues → Dixon-Coles fits tightly
@@ -157,12 +162,17 @@ def _pick_strategy(avg_goals: float, draw_rate: float, roi: float, n_matches: in
 
 
 def _recommended_edge(roi: float) -> float:
-    """Tighten the minimum edge filter for weak or negative-ROI leagues."""
-    if roi < -15:
+    """Tighten the minimum edge filter for weak or negative-ROI leagues.
+
+    NOTE: roi is stored as a decimal fraction (e.g. -0.08 = 8% loss). Convert to
+    percent before comparing against the named thresholds.
+    """
+    roi_pct = roi * 100
+    if roi_pct < -15:
         return 0.10   # 10 % — only very strong edges
-    if roi < -8:
+    if roi_pct < -8:
         return 0.08   # 8 %
-    if roi < -3:
+    if roi_pct < -3:
         return 0.07   # 7 %
     return 0.05       # 5 % — baseline
 

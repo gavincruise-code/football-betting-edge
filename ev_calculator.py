@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from typing import Optional, Tuple
 import pandas as pd
+import numpy as np
 from poisson_engine import prob_over25_matrix, prob_draw, implied_probability, has_edge, expected_value
+
 
 @dataclass
 class FactorResult:

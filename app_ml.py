@@ -1693,8 +1693,11 @@ def render_ml_predictions_tab():
                         'init_o25': init_o25,
                         'init_u25': init_u25,
                         'effective_strat': effective_strat if scanner_model != "🎯 Auto-Optimal (By League)" else f"🎯 Auto ({effective_strat})",
-                        'has_data': has_data
+                        # FIX C7: store per-fixture early season flag so the card render
+                        # loop reads the correct value, not the leaked last-fixture value.
+                        'is_early_season': _is_early_season,
                     })
+
 
                 # SORT FIXTURES: +EV matches FIRST (True < False -> not x['is_val']), then CHRONOLOGICAL by kickoff time (sort_dt)
                 evaluated_fixtures.sort(key=lambda x: (not x['is_val'], x['sort_dt'], -x['best_edge']))
@@ -1858,15 +1861,18 @@ def render_ml_predictions_tab():
                     _stake_delta = None
                     _stake_delta_color = "normal"
                     if has_data and is_val:
-                        if _is_early_season and _portfolio_scaled:
+                        # FIX C7: read per-fixture value stored in item dict
+                        _item_is_early = item.get('is_early_season', False)
+                        if _item_is_early and _portfolio_scaled:
                             _stake_delta = "⚠️ 50% dampened · 🔀 portfolio scaled"
                             _stake_delta_color = "off"
-                        elif _is_early_season:
+                        elif _item_is_early:
                             _stake_delta = "⚠️ 50% dampened"
                             _stake_delta_color = "off"
                         elif _portfolio_scaled:
                             _stake_delta = "🔀 portfolio scaled"
                             _stake_delta_color = "off"
+
                     fc5.metric(
                         "Quarter-Kelly Stake",
                         f"£{rec_k_stake:.2f}" if (has_data and is_val) else "—",

@@ -33,7 +33,10 @@ def _norm(name: str) -> str:
         'copenhague': 'copenhagen',
         'wien': 'vienna',
         'munchen': 'munich',
-        'lisbon': 'sporting',
+        # NOTE: 'lisbon' removed — it incorrectly mapped Benfica (SL Benfica Lisbon)
+        # to 'sporting'. Use full-name aliases instead:
+        'sporting lisbon': 'sporting',
+        'sporting clube de portugal': 'sporting',
         'crvena zvezda': 'red star',
     }
     for k, v in aliases.items():
@@ -43,16 +46,21 @@ def _norm(name: str) -> str:
 
 
 
-def _teams_match(a: str, b: str, cutoff: float = 0.5) -> bool:
-    """Return True if team names are similar enough."""
+def _teams_match(a: str, b: str, cutoff: float = 0.80) -> bool:
+    """Return True if team names are similar enough.
+
+    Threshold raised to 0.80 (matching data_ingestion.py fix) to avoid false
+    positives like 'Manchester United' matching 'Manchester City' via 4-char
+    prefix. The old 4-char prefix check is removed for the same reason.
+    """
     import difflib
     na, nb = _norm(a), _norm(b)
     if na == nb:
         return True
-    if na[:4] == nb[:4] and len(na) >= 4:
-        return True
     ratio = difflib.SequenceMatcher(None, na, nb).ratio()
     return ratio >= cutoff
+
+
 
 
 def get_placed_bets() -> pd.DataFrame:
@@ -174,9 +182,14 @@ def record_bet(
     CLV_% > 0 means you consistently beat the closing line — a strong signal
     of real edge even at small sample sizes (useful from ~30 bets onwards).
     """
-    # Compute CLV if closing odds provided
-    if closing_odds and closing_odds > 1.0 and model_prob and model_prob > 0:
-        clv_pct = round((model_prob * closing_odds - 1.0) * 100, 2)
+    # Compute CLV if closing odds provided.
+    # CLV = (odds taken / closing odds - 1) × 100
+    # Positive means you got better than the closing price — the most reliable
+    # short-term edge indicator, independent of result variance.
+    # NOTE: the old formula (model_prob * closing_odds - 1) was wrong —
+    # that computes model EV at the closing price, not closing line value.
+    if closing_odds and closing_odds > 1.0 and odds and float(odds) > 1.0:
+        clv_pct = round((float(odds) / float(closing_odds) - 1.0) * 100, 2)
     else:
         clv_pct = None
 
@@ -445,6 +458,11 @@ def auto_settle_bets() -> dict:
                     f"(goals: {total_goals:.0f}, market: {market})")
 
     if changed:
+        # FIX C11: Save Result column changes first so get_placed_bets() can
+        # read them, then reload to recalculate Profit_Loss_£ and
+        # Cumulative_PL_£ correctly before the final write.
+        df.to_csv(LOG_FILE, index=False)
+        df = get_placed_bets()   # recalculates P/L from scratch
         df.to_csv(LOG_FILE, index=False)
 
     return {'settled': settled, 'not_found': not_found, 'already': already}

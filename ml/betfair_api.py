@@ -50,13 +50,17 @@ def norm_str(s: str) -> str:
         'copenhague': 'copenhagen',
         'wien': 'vienna',
         'munchen': 'munich',
-        'lisbon': 'sporting',
+        # FIX C6: 'lisbon' → 'sporting' was incorrect — it also matched 'Benfica Lisbon',
+        # corrupting Benfica fixture lookups. Use the full club name as the key instead.
+        'sporting lisbon': 'sporting',
+        'sporting clube de portugal': 'sporting',
         'crvena zvezda': 'red star',
     }
     for k, v in aliases.items():
         if k in n:
             n = n.replace(k, v)
     return n.strip()
+
 
 
 
@@ -329,9 +333,12 @@ class BetfairExchangeClient:
         nh = norm_str(home_team)
         na = norm_str(away_team)
 
-        # Pass 1: Exact or strong substring match
+        # Pass 1: Exact positional match — home team must appear on the left of ' v ',
+        # away team on the right. Simple substring matching without split caused
+        # 'Milan' to match 'Cagliari v Milan' for any home team (C8 fix).
         for ev_key, data in self.market_cache.items():
-            if (nh in ev_key) and (na in ev_key):
+            parts = ev_key.split(" v ", 1)
+            if len(parts) == 2 and nh in parts[0] and na in parts[1]:
                 return data
 
         # Pass 2: Word-level match (handles "Shandong Taishan" vs "shandong taishan v qingdao")

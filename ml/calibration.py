@@ -37,7 +37,11 @@ def fit_calibrator(y_true: np.ndarray, y_prob: np.ndarray) -> LogisticRegression
         return None
 
     X = y_prob.reshape(-1, 1)
-    lr = LogisticRegression(C=1e10, solver='lbfgs', max_iter=1000)
+    # FIX H3: C=1e10 was effectively no regularisation — on per-league validation
+    # sets of N~60-80, the calibrator overfitted (identical problem to isotonic
+    # that it was meant to replace). C=1.0 provides appropriate regularisation.
+    lr = LogisticRegression(C=1.0, solver='lbfgs', max_iter=1000)
+
     try:
         lr.fit(X, y_true)
         return lr

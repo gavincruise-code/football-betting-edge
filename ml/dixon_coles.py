@@ -197,10 +197,21 @@ def predict_score_probs(
 
     return matrix
 
-def predict_over25(params: Dict, home_team: str, away_team: str) -> float:
-    """Calculates P(Over 2.5 goals) from Dixon-Coles parameters in O(1) time."""
+def predict_over25(params: Dict, home_team: str, away_team: str, league_base_rate: float = 0.53) -> float:
+    """Calculates P(Over 2.5 goals) from Dixon-Coles parameters in O(1) time.
+
+    Args:
+        params: Fitted Dixon-Coles parameters dict.
+        home_team: Home team name.
+        away_team: Away team name.
+        league_base_rate: Historical Over 2.5 rate for this league, used as
+            fallback when DC hasn't converged. Default 0.53 is the approximate
+            cross-league average. Pass the actual league rate where available.
+            FIX H9: was hardcoded 0.50, which is below most leagues' true rate
+            (~52-56%) and created phantom Under 2.5 bias on non-converged leagues.
+    """
     if not params or not params.get('converged', False):
-        return 0.50
+        return league_base_rate
 
     home_adv = params['home_adv']
     rho = params['rho']
