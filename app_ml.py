@@ -915,18 +915,191 @@ def render_ml_predictions_tab():
                     'dag and red': 'dag and red',
                     'ebbsfleet united': 'ebbsfleet',
                     'maidenhead united': 'maidenhead',
+
+                    # ── Eredivisie ─────────────────────────────────────────────────────
+                    'pec zwolle': 'zwolle',
+                    'sc cambuur': 'cambuur',
+                    'ado den haag': 'den haag',
+                    'nec nijmegen': 'nec',
+                    'go ahead eagles': 'go ahead eagles',
+
+                    # ── Japan (J-League) ───────────────────────────────────────────────
+                    'fagiano okayama': 'okayama',
+                    'jef united ichihara-chiba': 'jef united',
+                    'kyoto sanga': 'kyoto',
+                    'machida zelvia': 'machida',
+                    'mito hollyhock': 'mito',
+                    'tokyo verdy 1969': 'tokyo verdy',
+                    'urawa red diamonds': 'urawa reds',
+                    'jubilo iwata': 'jubilo',
+                    'shonan bellmare': 'shonan',
+                    'sagan tosu': 'tosu',
+                    'avispa fukuoka': 'fukuoka',
+                    'cerezo osaka': 'c osaka',
+                    'gamba osaka': 'g osaka',
+                    'vissel kobe': 'kobe',
+
+                    # ── La Liga ────────────────────────────────────────────────────────
+                    # (Most handled by diacritic fix; 'atletico madrid' alias already set)
+                    'racing santander': 'r santander',
+                    'deportivo la coruna': 'deportivo',
+                    'real racing club': 'r santander',
+
+                    # ── Ligue 1 ────────────────────────────────────────────────────────
+                    'aj auxerre': 'auxerre',
+                    'paris saint-germain fc': 'paris sg',
+                    'paris fc': 'paris fc',
+
+                    # ── Ligue 2 ────────────────────────────────────────────────────────
+                    'as nancy lorraine': 'nancy',
+                    'dijon fco': 'dijon',
+                    'rodez aveyron': 'rodez',
+                    'saint-etienne': 'st etienne',
+                    'stade laval': 'laval',
+                    'pau fc': 'pau fc',
+                    'pau': 'pau fc',
+
+                    # ── Mexico ─────────────────────────────────────────────────────────
+                    'america': 'club america',
+                    'atletico de san luis': 'atl. san luis',
+                    'leon': 'club leon',
+                    'santos': 'santos laguna',
+                    'tijuana': 'club tijuana',
+                    'pumas unam': 'pumas unam',
+                    'necaxa': 'necaxa',
+                    'queretaro': 'queretaro',
+                    'atletico san luis': 'atl. san luis',
+
+                    # ── Belgium (Pro League) ───────────────────────────────────────────
+                    'kv mechelen': 'mechelen',
+                    'kvc westerlo': 'westerlo',
+                    'racing genk': 'genk',
+                    'royal charleroi sc': 'charleroi',
+                    'standard liege': 'standard',
+                    'zulte-waregem': 'waregem',
+                    'kaa gent': 'gent',
+                    'rsc anderlecht': 'anderlecht',
+                    'club brugge kv': 'club brugge',
+                    'royal antwerp fc': 'antwerp',
+                    'oud-heverlee leuven': 'oh leuven',
+
+                    # ── Russia ─────────────────────────────────────────────────────────
+                    'dinamo moscow': 'dynamo moscow',
+                    'baltika kaliningrad': 'baltika',
+                    'gazovik orenburg': 'orenburg',
+                    'rostov': 'fk rostov',
+                    'zenit st petersburg': 'zenit',
+                    'lokomotiv moscow': 'lokomotiv',
+                    'spartak moscow': 'spartak',
+                    'cska moscow': 'cska',
+                    'rubin kazan': 'rubin',
+                    'ural yekaterinburg': 'ural',
+
+                    # ── Scotland (Championship - SC1) ──────────────────────────────────
+                    'ayr united': 'ayr',
+                    'dunfermline athletic': 'dunfermline',
+                    'greenock morton': 'morton',
+                    'inverness caledonian thistle': 'inverness c',
+                    'partick thistle': 'partick',
+                    'queen of the south': 'queen of south',
+                    'raith rovers': 'raith',
+                    'arbroath fc': 'arbroath',
+
+                    # ── Spain (Segunda Division) ───────────────────────────────────────
+                    'sporting gijon': 'sp gijon',
+                    'real oviedo': 'oviedo',
+                    'real sociedad ii': 'sociedad b',
+                    'real zaragoza': 'zaragoza',
+                    'sd ponferradina': 'ponferradina',
+                    'cf fuenlabrada': 'fuenlabrada',
+
+                    # ── Liga Portugal ──────────────────────────────────────────────────
+                    'c.d. nacional': 'nacional',
+                    'academico de viseu': 'academico viseu',
+                    'cf estrela da amadora': 'estrela',
+                    'sc farense': 'farense',
+                    'maritimo': 'maritimo',
+
+                    # ── Italy (Serie B) ────────────────────────────────────────────────
+                    'us avellino': 'avellino',
+                    'us catanzaro': 'catanzaro',
+                    'us cremonese': 'cremonese',
+                    'calcio padova': 'padova',
+                    'ac pisa': 'pisa',
+                    'us salernitana': 'salernitana',
+
+                    # ── Turkey (Super Lig) ─────────────────────────────────────────────
+                    'caykur rizespor': 'rizespor',
+                    'istanbul basaksehir': 'basaksehir',
+                    'erzurum bb': 'bb erzurumspor',
+                    'bb erzurumspor': 'bb erzurumspor',
+                    'giresunspor': 'giresunspor',
+                    'umraniyespor': 'umraniyespor',
+                    'pendikspor': 'pendikspor',
+
+                    # ── Sweden (Allsvenskan) ───────────────────────────────────────────
+                    'bk hacken': 'hacken',
+                    'if brommapojkarna': 'brommapojkarna',
+                    'if elfsborg': 'elfsborg',
+                    'ik sirius': 'sirius',
+                    'djurgardens if': 'djurgarden',
+                    'if djurgarden': 'djurgarden',
+                    'hammarby if': 'hammarby',
+                    'ifk norrkoping': 'norrkoping',
+                    'ifk goteborg': 'goteborg',
+                    'ifk gothenburg': 'goteborg',
+                    'kalmar ff': 'kalmar',
+                    'orebro sk': 'orebro',
+                    'halmstads bk': 'halmstad',
+                    'mjallby aif': 'mjallby',
+                    'bk forward': 'forward',
+
+                    # ── USA (MLS) ──────────────────────────────────────────────────────
+                    'd.c. united': 'dc united',
+                    'la galaxy': 'los angeles galaxy',
+                    'lafc': 'los angeles fc',
+                    'red bull new york': 'new york red bulls',
+                    'new york red bulls': 'new york red bulls',
+                    'sporting kansas city': 'sporting kc',
+                    'colorado rapids': 'colorado',
+                    'real salt lake': 'salt lake',
+                    'fc dallas': 'dallas',
+                    'houston dynamo': 'houston',
+                    'chicago fire': 'chicago',
+                    'columbus crew': 'columbus',
+                    'toronto fc': 'toronto',
+                    'new england revolution': 'ne revolution',
+                    'vancouver whitecaps': 'vancouver',
+                    'portland timbers': 'portland',
+                    'seattle sounders': 'seattle',
+                    'san jose earthquakes': 'san jose',
+                    'minnesota united': 'minnesota',
+                    'atlanta united': 'atlanta',
+                    'orlando city': 'orlando',
+                    'philadelphia union': 'philadelphia',
+                    'inter miami cf': 'inter miami',
+                    'austin fc': 'austin',
+                    'charlotte fc': 'charlotte',
+                    'nashville sc': 'nashville',
+                    'cf montreal': 'montreal',
+                    'st. louis city sc': 'st. louis',
+                    'st louis city sc': 'st. louis',
                 }
 
                 def norm_team(name):
                     if not name: return ""
                     s = str(name).lower().strip()
-                    # Check alias map first (exact match on lowercased input)
-                    if s in TEAM_ALIASES:
-                        s = TEAM_ALIASES[s]
+                    # Strip diacritics BEFORE alias lookup so accented names
+                    # (e.g. 'Atlético', 'Vitória', 'León') find their alias
+                    # without needing duplicate accented entries in the dict.
                     s = s.replace('ø', 'o').replace('æ', 'ae').replace('å', 'a').replace('ß', 'ss')
                     s = s.replace('ü', 'u').replace('ö', 'o').replace('ä', 'a').replace('é', 'e').replace('è', 'e').replace('à', 'a').replace('ç', 'c').replace('ñ', 'n')
-                    n = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
-                    return n.replace('ifk ', '').replace('fc ', '').replace('sk ', '').replace('ac ', '').replace('cd ', '').strip()
+                    s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+                    # Now check alias map on the diacritic-free lowercased string
+                    if s in TEAM_ALIASES:
+                        s = TEAM_ALIASES[s]
+                    return s.replace('ifk ', '').replace('fc ', '').replace('sk ', '').replace('ac ', '').replace('cd ', '').strip()
+
 
                 def parse_sort_dt(r):
                     d = r['Date'] if pd.notnull(r['Date']) else pd.Timestamp.now()
