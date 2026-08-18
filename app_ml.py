@@ -374,15 +374,18 @@ def render_ml_predictions_tab():
                         "Early-Season Mode",
                         value=_is_aug_sep,
                         help=(
-                            "Automatically enabled Aug–Sep. When on:\n"
+                            "When on, applies early-season dampening only to leagues "
+                            "genuinely in their first 6 weeks:\n"
                             "• Stake dampener: 50% of normal Kelly stake\n"
-                            "• Under 2.5 minimum edge raised to 8%\n"
-                            "(Teams lack defensive cohesion early in season)"
+                            "• Under 2.5 minimum edge raised to 8%\n\n"
+                            "Auto-enabled Aug–Sep for European leagues.\n"
+                            "Does NOT dampen MLS, Brazil, Argentina, Japan, "
+                            "Sweden etc. which started months earlier."
                         ),
                         key="early_season_mode"
                     )
                     if early_season_mode:
-                        st.caption("🔻 Stakes halved · 📈 Under 2.5 edge ≥ 8%")
+                        st.caption("⚠️ Early-season dampening active for European leagues")
 
                     exclude_uefa_qual = st.checkbox(
                         "Exclude UEFA Qualifiers",
@@ -1152,6 +1155,57 @@ def render_ml_predictions_tab():
                 _dbg_no_league_list  = []  # (HomeTeam, AwayTeam, raw_league)
                 _dbg_kicked_off_list = []  # (HomeTeam, AwayTeam, time_str)
 
+                # ── Per-league early-season detection ─────────────────────────────
+                # Different leagues start at different times of year.
+                # Early-season mode should only apply within the first 6 weeks of
+                # THAT league's season start, not globally during Aug/Sep.
+                _SEASON_START_MONTH = {
+                    # August starters (European model)
+                    'EPL': 8, 'Championship': 8, 'League 1': 8, 'League 2': 8, 'Conference': 8,
+                    'Scottish Premiership': 8, 'Scottish Championship': 8,
+                    'La Liga': 8, 'Segunda Division': 8,
+                    'Bundesliga': 8, 'Bundesliga 2': 8,
+                    'Serie A': 8, 'Serie B': 8,
+                    'Ligue 1': 8, 'Ligue 2': 8,
+                    'Eredivisie': 8, 'Pro League': 8,
+                    'Liga Portugal': 8, 'Super Lig': 8,
+                    'Super League Greece': 8,
+                    # July starters
+                    'Russia': 7, 'Poland': 7, 'Austria': 7, 'Switzerland': 7, 'Romania': 7,
+                    # February starters (Americas, Asia)
+                    'MLS': 2, 'USA (MLS)': 2,
+                    'Argentina': 2, 'Brazil': 2, 'Colombia': 2,
+                    'Chile': 2, 'Uruguay': 2, 'Peru': 2, 'Ecuador': 2,
+                    'Japan': 2, 'South Korea': 2,
+                    # March starters
+                    'China': 3,
+                    # April starters (Scandinavia)
+                    'Sweden': 4, 'Norway': 4, 'Denmark': 4, 'Finland': 4,
+                    # August starters (Africa)
+                    'South Africa': 8,
+                    # Mexico: Liga MX starts July (Apertura) and January (Clausura)
+                    'Mexico': 7,
+                }
+
+                def _is_early_season_for_league(league_str, now=None, weeks=6):
+                    """Return True if now is within `weeks` weeks of the league's season start."""
+                    if now is None:
+                        now = pd.Timestamp.now()
+                    start_month = _SEASON_START_MONTH.get(league_str)
+                    if start_month is None:
+                        # Unknown league — fall back to global Aug/Sep heuristic
+                        return now.month in (8, 9)
+                    # Compute season start as 1st of start_month in current year
+                    season_start = pd.Timestamp(year=now.year, month=start_month, day=1)
+                    # If the season start is more than 2 weeks in the future, check last year's
+                    if season_start > now + pd.Timedelta(days=14):
+                        season_start = pd.Timestamp(year=now.year - 1, month=start_month, day=1)
+                    days_since = (now.normalize() - season_start).days
+                    return 0 <= days_since <= weeks * 7
+
+                _now = pd.Timestamp.now()
+
+
                 for idx, row in filtered_fix.iterrows():
                     h_team = row['HomeTeam']
                     a_team = row['AwayTeam']
@@ -1171,6 +1225,12 @@ def render_ml_predictions_tab():
                             m_date
                         ))
                         continue
+
+                    # Per-fixture early-season flag: only dampen stakes/edge if this
+                    # specific league is genuinely in its early weeks, not just because
+                    # the calendar says Aug/Sep (which is wrong for MLS, Brazil, Japan etc.)
+                    _is_early_season = early_season_mode and _is_early_season_for_league(_row_league, _now)
+
 
                     # Skip fixtures that have already kicked off.
                     # Only filter when we have a real kickoff time (ESPN fixtures supply HH:MM).
@@ -1546,8 +1606,8 @@ def render_ml_predictions_tab():
 
                         val_o25 = pd.notna(edge_o25) and edge_o25 >= edge_filter
                         # Early-season mode: raise Under 2.5 minimum edge to 8%
-                        # to combat poor defensive cohesion in Aug/Sep gameweeks
-                        _u25_edge_threshold = max(edge_filter, 0.08) if early_season_mode else edge_filter
+                        # Only for leagues genuinely in early season (per _is_early_season)
+                        _u25_edge_threshold = max(edge_filter, 0.08) if _is_early_season else edge_filter
                         val_u25 = pd.notna(edge_u25) and edge_u25 >= _u25_edge_threshold
                         is_val = val_o25 or val_u25
 
@@ -1578,10 +1638,10 @@ def render_ml_predictions_tab():
 
                         # Fix #4: Use user-specified bankroll for Kelly stake sizing
                         rec_k_stake = kelly_stake(best_prob, best_odds, user_bankroll) if pd.notna(best_odds) and best_odds > 1 else 10.0
-                        # Early-season dampener: halve stakes in Aug/Sep due to high
-                        # parameter uncertainty (new squads, summer transfers, no cohesion)
-                        if early_season_mode:
+                        # Early-season dampener: halve stakes for leagues in their first 6 weeks
+                        if _is_early_season:
                             rec_k_stake = round(rec_k_stake * 0.50, 2)
+
                     else:
                         model_prob_u25 = 1.0 - model_prob_o25 if pd.notna(model_prob_o25) else np.nan
                         edge_o25 = np.nan
@@ -1798,10 +1858,10 @@ def render_ml_predictions_tab():
                     _stake_delta = None
                     _stake_delta_color = "normal"
                     if has_data and is_val:
-                        if early_season_mode and _portfolio_scaled:
+                        if _is_early_season and _portfolio_scaled:
                             _stake_delta = "⚠️ 50% dampened · 🔀 portfolio scaled"
                             _stake_delta_color = "off"
-                        elif early_season_mode:
+                        elif _is_early_season:
                             _stake_delta = "⚠️ 50% dampened"
                             _stake_delta_color = "off"
                         elif _portfolio_scaled:
