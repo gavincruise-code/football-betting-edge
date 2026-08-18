@@ -801,9 +801,13 @@ def render_ml_predictions_tab():
                     'motherwell fc': 'motherwell', 'st mirren fc': 'st mirren',
                     'livingston fc': 'livingston', 'ross county fc': 'ross county',
                     'kilmarnock fc': 'kilmarnock', 'st johnstone fc': 'st johnstone',
-                    # ── EPL: ESPN full display names → football-data.co.uk short names ─
-                    # ESPN uses full official names; football-data.co.uk uses abbreviations.
-                    # Without these, nearly every EPL fixture fails team history lookup.
+                    # ── English Football: ESPN full display names → football-data.co.uk names ──
+                    # ESPN uses full official names; football-data.co.uk uses shortened versions.
+                    # Without these aliases every team with City/United/Rovers/Town/etc. fails
+                    # the 0.75 fuzzy threshold and returns "Insufficient team history".
+                    # Covers all 5 English tiers: EPL, Championship, League 1, League 2, Conference.
+
+                    # EPL
                     'manchester city': 'man city',
                     'manchester united': 'man united',
                     'manchester utd': 'man united',
@@ -833,7 +837,7 @@ def render_ml_predictions_tab():
                     'norwich city': 'norwich',
                     'cardiff city': 'cardiff',
                     'swansea city': 'swansea',
-                    'stoke city': 'stoke',
+                    'stoke city': 'stoke city',
                     'hull city': 'hull',
                     'sunderland afc': 'sunderland',
                     'middlesbrough fc': 'middlesbrough',
@@ -847,6 +851,70 @@ def render_ml_predictions_tab():
                     'brentford fc': 'brentford',
                     'fulham fc': 'fulham',
                     'burnley fc': 'burnley',
+
+                    # Championship (E1) — additional to EPL above
+                    'derby county': 'derby',
+                    'lincoln city': 'lincoln',
+                    'charlton athletic': 'charlton',
+                    'preston north end': 'preston',
+                    'millwall fc': 'millwall',
+                    'plymouth argyle': 'plymouth',
+                    'oxford united': 'oxford',
+                    'bristol city fc': 'bristol city',
+                    'sheffield utd': 'sheffield utd',
+
+                    # League 1 (E2)
+                    'burton albion': 'burton',
+                    'cambridge united': 'cambridge',
+                    'doncaster rovers': 'doncaster',
+                    'peterborough united': 'peterboro',
+                    'stockport county': 'stockport',
+                    'wycombe wanderers': 'wycombe',
+                    'huddersfield town': 'huddersfield',
+                    'mansfield town': 'mansfield',
+                    'bradford city': 'bradford',
+                    'fleetwood town fc': 'fleetwood',
+                    'exeter city': 'exeter',
+                    'mk dons': 'mk dons',
+                    'afc wimbledon': 'afc wimbledon',
+
+                    # League 2 (E3)
+                    'accrington stanley': 'accrington',
+                    'colchester united': 'colchester',
+                    'crewe alexandra': 'crewe',
+                    'grimsby town': 'grimsby',
+                    'northampton town': 'northampton',
+                    'oldham athletic': 'oldham',
+                    'rotherham united': 'rotherham',
+                    'salford city': 'salford',
+                    'swindon town': 'swindon',
+                    'tranmere rovers': 'tranmere',
+                    'bristol rovers': 'bristol rvs',
+                    'cheltenham town': 'cheltenham',
+                    'newport county afc': 'newport county',
+
+                    # Conference (EC)
+                    'carlisle united': 'carlisle',
+                    'fc halifax town': 'halifax',
+                    'halifax town': 'halifax',
+                    'harrogate town': 'harrogate',
+                    'hartlepool united': 'hartlepool',
+                    'kidderminster harriers': 'kidderminster',
+                    'scunthorpe united': 'scunthorpe',
+                    'solihull moors': 'solihull',
+                    'southend united': 'southend',
+                    'sutton united': 'sutton',
+                    'yeovil town': 'yeovil',
+                    'forest green rovers': 'forest green',
+                    'aldershot town': 'aldershot',
+                    'boston united': 'boston utd',
+                    'afc fylde': 'fylde',
+                    'barrow afc': 'barrow',
+                    'york city': 'york',
+                    'dagenham and redbridge': 'dag and red',
+                    'dag and red': 'dag and red',
+                    'ebbsfleet united': 'ebbsfleet',
+                    'maidenhead united': 'maidenhead',
                 }
 
                 def norm_team(name):
