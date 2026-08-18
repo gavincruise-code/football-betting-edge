@@ -63,13 +63,18 @@ def get_placed_bets() -> pd.DataFrame:
             if df.empty:
                 return df
 
-            # Ensure required columns exist
+            # Ensure required columns exist (backwards-compatible with older CSV rows)
             if 'Result' not in df.columns:
                 df['Result'] = 'PENDING'
             if 'Profit_Loss_£' not in df.columns:
                 df['Profit_Loss_£'] = 0.0
             if 'Cumulative_PL_£' not in df.columns:
                 df['Cumulative_PL_£'] = 0.0
+            # FIX M5: CLV columns — blank for pre-existing rows, filled in later
+            if 'Closing_Odds' not in df.columns:
+                df['Closing_Odds'] = ''
+            if 'CLV_%' not in df.columns:
+                df['CLV_%'] = ''
 
             # Recalculate P/L and cumulative P/L from scratch
             pl_vals = []
@@ -91,6 +96,7 @@ def get_placed_bets() -> pd.DataFrame:
         except Exception:
             return pd.DataFrame()
     return pd.DataFrame()
+
 
 
 def _git_sync_bet_log():
@@ -155,9 +161,25 @@ def record_bet(
     implied_prob: float,
     edge_pct: float,
     recommended_stake: float,
-    notes: str = ""
+    notes: str = "",
+    closing_odds: float = None,       # FIX M5: BSP / Betfair closing price
 ) -> bool:
-    """Append a newly placed bet record to placed_bets_log.csv."""
+    """Append a newly placed bet record to placed_bets_log.csv.
+
+    CLV (Closing Line Value) measures whether the odds taken beat the
+    closing market price — the most reliable short-term indicator of genuine
+    model edge, independent of result noise.
+
+    Record closing_odds (BSP) after each market closes to populate CLV_%.
+    CLV_% > 0 means you consistently beat the closing line — a strong signal
+    of real edge even at small sample sizes (useful from ~30 bets onwards).
+    """
+    # Compute CLV if closing odds provided
+    if closing_odds and closing_odds > 1.0 and model_prob and model_prob > 0:
+        clv_pct = round((model_prob * closing_odds - 1.0) * 100, 2)
+    else:
+        clv_pct = None
+
     record = {
         'Timestamp_Recorded': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'Match_Date': str(date),
@@ -171,6 +193,8 @@ def record_bet(
         'Implied_Prob_%': round(float(implied_prob) * 100, 1),
         'Edge_%': round(float(edge_pct) * 100, 1),
         'Recommended_Stake_£': round(float(recommended_stake), 2),
+        'Closing_Odds': round(float(closing_odds), 3) if closing_odds else '',
+        'CLV_%': clv_pct if clv_pct is not None else '',
         'Result': 'PENDING',
         'Profit_Loss_£': 0.0,
         'Cumulative_PL_£': 0.0,

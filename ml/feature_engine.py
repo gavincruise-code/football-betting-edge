@@ -303,14 +303,29 @@ def compute_all_features_for_match(
         feats.update(compute_rolling_shot_features(away_all_hist, away_team, 'A_All', w))
 
     # Trends (short-term vs long-term)
-    for team_prefix in ['H_H', 'H_All', 'A_A', 'A_All']:
+    # FIX M6: Only compute trend when both windows see DIFFERENT samples.
+    # When a team has played < 20 games total, tail(10) and tail(38) return
+    # the same rows → trend collapses to 0.0 (a synthetic zero-variance signal).
+    # Guard: require at least 15 games total before computing any trend.
+    _h_games  = len(home_all_hist)
+    _a_games  = len(away_all_hist)
+    feats['home_season_games_played'] = float(_h_games)
+    feats['away_season_games_played'] = float(_a_games)
+
+    for team_prefix, n_games in [('H_H', len(home_h_hist)), ('H_All', _h_games),
+                                   ('A_A', len(away_a_hist)), ('A_All', _a_games)]:
         g10 = feats.get(f"goals_scored_avg_{team_prefix}_10", np.nan)
         g38 = feats.get(f"goals_scored_avg_{team_prefix}_38", np.nan)
-        feats[f"goals_trend_{team_prefix}"] = g10 - g38 if pd.notna(g10) and pd.notna(g38) else np.nan
+        # Only meaningful if team has enough games to fill BOTH windows differently
+        feats[f"goals_trend_{team_prefix}"] = (
+            g10 - g38 if (pd.notna(g10) and pd.notna(g38) and n_games >= 15) else np.nan
+        )
 
         xg10 = feats.get(f"xG_avg_{team_prefix}_10", np.nan)
         xg38 = feats.get(f"xG_avg_{team_prefix}_38", np.nan)
-        feats[f"xG_trend_{team_prefix}"] = xg10 - xg38 if pd.notna(xg10) and pd.notna(xg38) else np.nan
+        feats[f"xG_trend_{team_prefix}"] = (
+            xg10 - xg38 if (pd.notna(xg10) and pd.notna(xg38) and n_games >= 15) else np.nan
+        )
 
     # Contextual, H2H, Market
     feats.update(compute_contextual_features(full_df, match_idx, match_date, home_team, away_team))

@@ -1238,8 +1238,21 @@ def render_ml_predictions_tab():
                     # Fix #1: Only compute edge when real live odds exist
                     if has_data and pd.notna(model_prob_o25) and has_live_odds:
                         model_prob_u25 = 1.0 - model_prob_o25
-                        imp_o25 = implied_probability(o25) if pd.notna(o25) and o25 > 1.0 else np.nan
-                        imp_u25 = implied_probability(u25) if pd.notna(u25) and u25 > 1.0 else np.nan
+
+                        # FIX H4: Proportional devigging — remove bookmaker overround before
+                        # computing edge. Raw 1/odds inflates implied probability by ~2.5–4%.
+                        # With both sides available: P_fair = (1/odds_side) / (1/odds_O + 1/odds_U)
+                        # This gives the true market consensus probability without the margin.
+                        if pd.notna(o25) and o25 > 1.0 and pd.notna(u25) and u25 > 1.0:
+                            _raw_o = 1.0 / o25
+                            _raw_u = 1.0 / u25
+                            _total = _raw_o + _raw_u  # overround (e.g. 1.05 = 5% margin)
+                            imp_o25 = _raw_o / _total  # fair implied probability Over 2.5
+                            imp_u25 = _raw_u / _total  # fair implied probability Under 2.5
+                        else:
+                            # Only one side available — fall back to raw implied probability
+                            imp_o25 = (1.0 / o25) if pd.notna(o25) and o25 > 1.0 else np.nan
+                            imp_u25 = (1.0 / u25) if pd.notna(u25) and u25 > 1.0 else np.nan
 
                         edge_o25 = (model_prob_o25 - imp_o25) if pd.notna(imp_o25) else np.nan
                         edge_u25 = (model_prob_u25 - imp_u25) if pd.notna(imp_u25) else np.nan
@@ -1338,6 +1351,40 @@ def render_ml_predictions_tab():
 
                 # SORT FIXTURES: +EV matches FIRST (True < False -> not x['is_val']), then CHRONOLOGICAL by kickoff time (sort_dt)
                 evaluated_fixtures.sort(key=lambda x: (not x['is_val'], x['sort_dt'], -x['best_edge']))
+
+                # ── FIX H5: Portfolio Kelly — cap simultaneous kickoff-window exposure ────
+                # Without this, 10 x £50 bets at 3pm Saturday = £500 at risk simultaneously
+                # (50% of a £1,000 bankroll). Kelly is designed for sequential bets, not
+                # concurrent ones — simultaneous bets need portfolio-level normalisation.
+                #
+                # Algorithm:
+                #   1. Group +EV bets by their kickoff time slot (rounded to nearest 30 min)
+                #   2. For each slot, sum raw Kelly stakes
+                #   3. If total > MAX_MATCHDAY_EXPOSURE * bankroll, scale all down proportionally
+                _MAX_WINDOW_EXPOSURE = 0.15   # max 15% of bankroll per kickoff window
+                _max_window_stake    = user_bankroll * _MAX_WINDOW_EXPOSURE
+
+                # Group +EV items by kickoff slot
+                from collections import defaultdict
+                _slot_groups = defaultdict(list)
+                for _item in evaluated_fixtures:
+                    if _item['is_val'] and _item['rec_k_stake'] > 0:
+                        # Round kickoff to nearest 30-minute slot for grouping
+                        try:
+                            _dt = _item['sort_dt']
+                            _slot = _dt.replace(minute=(_dt.minute // 30) * 30, second=0, microsecond=0)
+                        except Exception:
+                            _slot = 'unknown'
+                        _slot_groups[_slot].append(_item)
+
+                for _slot, _slot_items in _slot_groups.items():
+                    _total_raw = sum(i['rec_k_stake'] for i in _slot_items)
+                    if _total_raw > _max_window_stake and _total_raw > 0:
+                        _scale = _max_window_stake / _total_raw
+                        for _item in _slot_items:
+                            _item['rec_k_stake'] = round(_item['rec_k_stake'] * _scale, 2)
+                            _item['portfolio_scaled'] = True   # flag for UI badge
+                # ─────────────────────────────────────────────────────────────────────────
 
                 opportunities_found = sum(1 for item in evaluated_fixtures if item['is_val'])
                 _dbg_no_data    = sum(1 for item in evaluated_fixtures if not item['has_data'])
@@ -1460,11 +1507,24 @@ def render_ml_predictions_tab():
                     fc2.metric("Implied Prob", f"{best_imp*100:.1f}%" if pd.notna(best_imp) else "—")
                     fc3.metric("Model Prob", f"{best_prob*100:.1f}%" if (has_data and pd.notna(best_prob)) else "N/A (No Data)")
                     fc4.metric(f"Edge % ({best_market})", f"{best_edge*100:+.1f}%" if (has_data and pd.notna(best_edge) and not has_no_odds) else "—", delta=f"{best_edge*100:+.1f}%" if (has_data and is_val) else None)
+                    _portfolio_scaled = item.get('portfolio_scaled', False)
+                    _stake_delta = None
+                    _stake_delta_color = "normal"
+                    if has_data and is_val:
+                        if early_season_mode and _portfolio_scaled:
+                            _stake_delta = "⚠️ 50% dampened · 🔀 portfolio scaled"
+                            _stake_delta_color = "off"
+                        elif early_season_mode:
+                            _stake_delta = "⚠️ 50% dampened"
+                            _stake_delta_color = "off"
+                        elif _portfolio_scaled:
+                            _stake_delta = "🔀 portfolio scaled"
+                            _stake_delta_color = "off"
                     fc5.metric(
                         "Quarter-Kelly Stake",
                         f"£{rec_k_stake:.2f}" if (has_data and is_val) else "—",
-                        delta="⚠️ 50% dampened" if (early_season_mode and has_data and is_val) else None,
-                        delta_color="off" if early_season_mode else "normal"
+                        delta=_stake_delta,
+                        delta_color=_stake_delta_color
                     )
 
                     with fc6:

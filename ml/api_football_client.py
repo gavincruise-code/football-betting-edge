@@ -94,7 +94,20 @@ def _fetch_season(league_id, season):
             timeout=15,
         )
         resp.raise_for_status()
-        fixtures = resp.json().get("response", [])
+        data = resp.json()
+
+        # FIX C3: API returns HTTP 200 even when rate-limited, with errors in the body.
+        # Previously: errors={} → resp.json().get("response", []) = [] → written to cache
+        # as valid empty file, locking in zero data for 3 days with no warning.
+        api_errors = data.get("errors", {})
+        if api_errors:
+            log.warning(
+                "API-Football returned errors for league=%s season=%s — NOT caching. Errors: %s",
+                league_id, season, api_errors
+            )
+            return []  # Do not write to cache
+
+        fixtures = data.get("response", [])
         with open(path, "w", encoding="utf-8") as f:
             json.dump(fixtures, f)
         remaining = int(resp.headers.get("x-ratelimit-requests-remaining", 100))

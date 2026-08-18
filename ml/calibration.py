@@ -1,13 +1,19 @@
 """
 Probability Calibration and Staking Module
 ============================================
-Isotonic regression calibration for probability reliability, ECE error calculation,
-and Quarter-Kelly Criterion bankroll management.
+Platt Scaling (logistic regression) calibration for probability reliability,
+ECE error calculation, and Quarter-Kelly Criterion bankroll management.
+
+FIX H2: Replaced IsotonicRegression with Platt Scaling.
+Isotonic regression fits staircase step functions that overfit on small
+per-league validation sets (N ≈ 60–80 matches). Platt scaling fits a
+smooth 2-parameter logistic function that is far more robust on small
+sample sizes and generalises better out-of-sample.
 """
 
 import numpy as np
 import pandas as pd
-from sklearn.isotonic import IsotonicRegression
+from sklearn.linear_model import LogisticRegression
 from sklearn.calibration import calibration_curve
 from typing import Tuple, Optional
 import logging
@@ -16,27 +22,47 @@ from ml.config import KELLY_FRACTION, KELLY_MAX_PCT
 
 logger = logging.getLogger(__name__)
 
-def fit_calibrator(y_true: np.ndarray, y_prob: np.ndarray) -> IsotonicRegression:
+def fit_calibrator(y_true: np.ndarray, y_prob: np.ndarray) -> LogisticRegression:
     """
-    Fits isotonic regression calibrator mapping uncalibrated probabilities to empirical frequencies.
+    Fits a Platt Scaling calibrator (logistic regression on raw model outputs).
+
+    Maps uncalibrated model probabilities → empirical posterior probabilities.
+    Robust on small datasets (N ≥ 20) unlike isotonic which overfits for N < 200.
+
+    Returns a fitted LogisticRegression that responds to .predict_proba().
+    Use calibrate() to apply it.
     """
-    ir = IsotonicRegression(out_of_bounds='clip', y_min=0.01, y_max=0.99)
-    ir.fit(y_prob, y_true)
-    return ir
+    if len(y_true) < 5:
+        logger.warning("Too few samples (%d) to fit calibrator — returning None", len(y_true))
+        return None
+
+    X = y_prob.reshape(-1, 1)
+    lr = LogisticRegression(C=1e10, solver='lbfgs', max_iter=1000)
+    try:
+        lr.fit(X, y_true)
+        return lr
+    except Exception as e:
+        logger.warning("Platt calibration fitting failed: %s", e)
+        return None
 
 def calibrate(
-    calibrator: IsotonicRegression,
+    calibrator,
     y_prob: np.ndarray,
     clip_min: float = 0.01,
     clip_max: float = 0.99
 ) -> np.ndarray:
     """
-    Applies fitted calibrator to probabilities.
+    Applies fitted Platt calibrator to raw model probabilities.
+    Falls back to clipped raw probabilities if no calibrator is fitted.
     """
     if calibrator is None:
         return np.clip(y_prob, clip_min, clip_max)
-    calibrated = calibrator.predict(y_prob)
-    return np.clip(calibrated, clip_min, clip_max)
+    try:
+        X = np.array(y_prob).reshape(-1, 1)
+        calibrated = calibrator.predict_proba(X)[:, 1]
+        return np.clip(calibrated, clip_min, clip_max)
+    except Exception:
+        return np.clip(y_prob, clip_min, clip_max)
 
 def expected_calibration_error(y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10) -> float:
     """
@@ -46,11 +72,11 @@ def expected_calibration_error(y_true: np.ndarray, y_prob: np.ndarray, n_bins: i
         return 0.0
 
     prob_true, prob_pred = calibration_curve(y_true, y_prob, n_bins=n_bins, strategy='uniform')
-    
+
     # Calculate bin weights
     bin_edges = np.linspace(0, 1, n_bins + 1)
     bin_assignments = np.digitize(y_prob, bin_edges) - 1
-    
+
     ece = 0.0
     n_samples = len(y_prob)
 

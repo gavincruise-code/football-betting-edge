@@ -89,22 +89,38 @@ def merge_datasets(fd_df: pd.DataFrame, xg_df: pd.DataFrame, league: str) -> pd.
         how='left'
     )
 
-    # Fallback merge for unmerged rows using date alone if only 1 match played that day for team
+    # Fallback merge for unmerged rows: use date + fuzzy team name similarity.
+    # FIX C2: The previous 4-char prefix match ([:4]) caused catastrophic collisions:
+    #   "Manchester United" → "manc" = "Manchester City" → "manc"
+    #   "Real Madrid" → "real" = "Real Sociedad" → "real"
+    # Fix: use difflib SequenceMatcher (threshold ≥ 0.80) which handles minor
+    # spelling differences (e.g. "Wolverhampton" vs "Wolves") without conflating rivals.
     if merged['xG_home'].isna().any():
+        import difflib
         unmerged_indices = merged[merged['xG_home'].isna()].index
         for idx in unmerged_indices:
             m_date = merged.loc[idx, 'match_date']
-            h_team = str(merged.loc[idx, 'HomeTeam']).lower()[:4]
-            a_team = str(merged.loc[idx, 'AwayTeam']).lower()[:4]
+            h_team = str(merged.loc[idx, 'HomeTeam']).lower().strip()
+            a_team = str(merged.loc[idx, 'AwayTeam']).lower().strip()
 
             cand = xg_df[xg_df['match_date'] == m_date]
+            best_score = 0.0
+            best_row = None
             for _, c_row in cand.iterrows():
-                c_h = str(c_row['home_team_fd']).lower()
-                c_a = str(c_row['away_team_fd']).lower()
-                if h_team in c_h or c_h[:4] in h_team:
-                    merged.loc[idx, 'xG_home'] = c_row['xG_home']
-                    merged.loc[idx, 'xG_away'] = c_row['xG_away']
-                    break
+                c_h = str(c_row['home_team_fd']).lower().strip()
+                c_a = str(c_row['away_team_fd']).lower().strip()
+                # Require BOTH home AND away to have ≥ 0.80 similarity
+                # to prevent one-sided partial matches from poisoning xG data
+                sim_h = difflib.SequenceMatcher(None, h_team, c_h).ratio()
+                sim_a = difflib.SequenceMatcher(None, a_team, c_a).ratio()
+                if sim_h >= 0.80 and sim_a >= 0.80:
+                    combined = sim_h + sim_a
+                    if combined > best_score:
+                        best_score = combined
+                        best_row = c_row
+            if best_row is not None:
+                merged.loc[idx, 'xG_home'] = best_row['xG_home']
+                merged.loc[idx, 'xG_away'] = best_row['xG_away']
 
     # Clean up temporary merge keys
     merged = merged.drop(columns=['home_team_fd', 'away_team_fd', 'match_date'], errors='ignore')

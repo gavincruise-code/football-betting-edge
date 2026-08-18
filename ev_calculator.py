@@ -59,7 +59,11 @@ def calculate_home_away_splits(history_df: pd.DataFrame, home_team: str, away_te
     home_history = get_home_history(history_df, home_team, before_date, n)
     away_history = get_away_history(history_df, away_team, before_date, n)
     
-    home_scored = home_history['FTHG'].mean() if not home_history.empty else 0.0
+    home_scored   = home_history['FTHG'].mean() if not home_history.empty else 0.0
+    # In away_history rows, the team is the AWAY side:
+    #   FTHG = goals scored by the HOME opponent = goals CONCEDED by our team ✓
+    #   FTAG = goals SCORED by our team (away side)
+    # So FTHG is correct here — original code was right, the audit finding was wrong.
     away_conceded = away_history['FTHG'].mean() if not away_history.empty else 0.0
     
     val = home_scored + away_conceded
@@ -93,30 +97,95 @@ def calculate_h2h(history_df: pd.DataFrame, home_team: str, away_team: str, befo
         detail=f"{over25_count} of {len(h2h_df)} H2H matches over 2.5"
     )
 
-def calculate_poisson_edge(history_df: pd.DataFrame, home_team: str, away_team: str, before_date, odds_over25: float = None, odds_draw: float = None, margin: float = 0.05, n_matches: int = 10) -> tuple:
-    """Factor 4: Poisson model edge. Returns (FactorResult, model_prob_over25, model_prob_draw, lam_h, lam_a)."""
+def _decay_weighted_mean(values: pd.Series, dates: pd.Series, ref_date, decay_rate: float = 0.003) -> float:
+    """
+    FIX M2: Exponential time-decay weighted mean.
+
+    Weight for each match: w_i = exp(-decay_rate * days_ago)
+    At decay_rate=0.003: half-life ≈ 231 days (~one full season).
+    A match from 2 seasons ago (730 days) gets weight = exp(-2.19) ≈ 0.11.
+    Last week's match gets weight ≈ 0.98.
+
+    This prevents stale form (old managers/squads) distorting lambda estimates.
+    """
+    if values.empty:
+        return float('nan')
+    try:
+        ref = pd.Timestamp(ref_date)
+        days_ago = (ref - pd.to_datetime(dates)).dt.days.clip(lower=0).astype(float)
+        weights = np.exp(-decay_rate * days_ago)
+        weights_sum = weights.sum()
+        if weights_sum <= 0:
+            return float(values.mean())
+        return float((values * weights).sum() / weights_sum)
+    except Exception:
+        return float(values.mean())
+
+def calculate_poisson_edge(
+    history_df: pd.DataFrame,
+    home_team: str,
+    away_team: str,
+    before_date,
+    odds_over25: float = None,
+    odds_draw: float = None,
+    margin: float = 0.05,
+    n_matches: int = 10
+) -> tuple:
+    """
+    Factor 4: Poisson model edge.
+    Returns (FactorResult, model_prob_over25, model_prob_draw, lam_h, lam_a).
+
+    Improvements applied:
+    - FIX M2: Time-decay weighting — recent matches weighted more than old ones
+    - FIX M1: League-average fallback — replaces global 1.0 with actual league goal rates
+    """
     from data_utils import get_home_history, get_away_history
-    
+
     home_history = get_home_history(history_df, home_team, before_date, n_matches)
     away_history = get_away_history(history_df, away_team, before_date, n_matches)
-    
-    lam_h = home_history['FTHG'].mean() if not home_history.empty else 1.0
-    lam_a = away_history['FTAG'].mean() if not away_history.empty else 1.0
-    
-    if pd.isna(lam_h): lam_h = 1.0
-    if pd.isna(lam_a): lam_a = 1.0
-    
+
+    # ── FIX M2: Time-decay weighted lambda estimates ───────────────────────────
+    if not home_history.empty and 'Date' in home_history.columns:
+        lam_h = _decay_weighted_mean(home_history['FTHG'], home_history['Date'], before_date)
+    else:
+        lam_h = float('nan')
+
+    if not away_history.empty and 'Date' in away_history.columns:
+        lam_a = _decay_weighted_mean(away_history['FTAG'], away_history['Date'], before_date)
+    else:
+        lam_a = float('nan')
+
+    # ── FIX M1: League-average fallback (replaces global 1.0) ─────────────────
+    # Using a universal 1.0 created phantom edges (Poisson(2.0) gives P(O25)=32.3%,
+    # which appears to beat high-odds markets on missing data teams).
+    # Now uses actual league scoring rates from the available dataset.
+    if pd.isna(lam_h) or pd.isna(lam_a):
+        try:
+            _all_before = history_df[pd.to_datetime(history_df['Date']) < pd.Timestamp(before_date)]
+            _league_h_avg = float(_all_before['FTHG'].mean()) if not _all_before.empty else 1.35
+            _league_a_avg = float(_all_before['FTAG'].mean()) if not _all_before.empty else 1.10
+        except Exception:
+            _league_h_avg, _league_a_avg = 1.35, 1.10
+        if pd.isna(lam_h):
+            lam_h = _league_h_avg
+        if pd.isna(lam_a):
+            lam_a = _league_a_avg
+
+    # Sanity clamp — prevents extreme lambdas from corrupting score matrix
+    lam_h = float(np.clip(lam_h, 0.3, 5.0))
+    lam_a = float(np.clip(lam_a, 0.3, 5.0))
+
     model_prob_over25 = prob_over25_matrix(lam_h, lam_a)
     model_prob_draw = prob_draw(lam_h, lam_a)
-    
+
     passed = False
     detail = "No edge"
-    
+
     if odds_over25 and odds_over25 > 1.0:
         imp_over25 = implied_probability(odds_over25)
         passed = has_edge(model_prob_over25, imp_over25, margin)
         detail = f"Model: {model_prob_over25:.2f}, Implied: {imp_over25:.2f}"
-    
+
     res = FactorResult(
         name="Poisson Edge",
         passed=passed,
@@ -124,7 +193,7 @@ def calculate_poisson_edge(history_df: pd.DataFrame, home_team: str, away_team: 
         threshold=margin,
         detail=detail
     )
-    
+
     return res, model_prob_over25, model_prob_draw, lam_h, lam_a
 
 def assess_match(history_df: pd.DataFrame, home_team: str, away_team: str, before_date, odds_over25: float = None, odds_under25: float = None, odds_draw: float = None, margin: float = 0.05) -> MatchAssessment:
