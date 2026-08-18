@@ -208,9 +208,10 @@ class BetfairExchangeClient:
             from datetime import timezone, timedelta
             now_utc = datetime.utcnow()
             from_dt = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
-            # FIX: Extended from 2 days to 4 days so weekend fixtures appear
-            # from Thursday onwards (Serie A / top leagues open markets ~48-72h ahead)
-            to_dt   = (now_utc + timedelta(days=4)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            # Extended to 7 days: ensures a full week of fixtures is always cached.
+            # Serie A / top league markets open ~48-72h before kickoff; 7 days
+            # guarantees any weekend fixture is available from Monday onwards.
+            to_dt   = (now_utc + timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
             payload = {
                 "filter": {
