@@ -120,4 +120,5 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-08-17 23:18:05,2026-08-18,Mexico,Necaxa,León,Over 2.5,1.85,🎯 Auto (Dual Ensemble),61.8,53.9,7.9,21.07,,WIN,17.91,298.94,,
 2026-08-18 10:03:40,2026-08-20,USA (MLS),Orlando City SC,Chicago Fire FC,Under 2.5,3.25,🎯 Auto (Dual Ensemble),43.7,30.6,13.1,46.66,,PENDING,0.0,298.94,,
 2026-08-18 10:04:03,2026-08-20,USA (MLS),Columbus Crew,CF Montréal,Over 2.5,1.59,🎯 Auto (Dual Ensemble),72.8,61.7,11.1,50.0,,PENDING,0.0,298.94,,
-2026-08-19 10:50:05,2026-08-19,LigaPro,Tigres FC,Envigado,Over 2.5,2.66,🎯 Auto (Dual Ensemble),51.1,36.7,14.4,25.0,,PENDING,0.0,0.0,,
+2026-08-19 10:50:05,2026-08-19,LigaPro,Tigres FC,Envigado,Over 2.5,2.66,🎯 Auto (Dual Ensemble),51.1,36.7,14.4,25.0,,PENDING,0.0,298.94,,
+2026-08-19 15:20:56,2026-08-19,Colombia,Águilas Doradas,Llaneros FC,Over 2.5,2.68,🎯 Auto (Dixon-Coles Only),44.9,36.9,8.0,30.26,,PENDING,0.0,0.0,,
