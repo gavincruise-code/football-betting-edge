@@ -168,4 +168,5 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-08-21 14:55:20,2026-08-22,Championship,Southampton,Stoke,Under 2.5,2.26,🎯 Auto (Dual Ensemble),57.0,43.6,13.3,25.0,,PENDING,0.0,208.76,,
 2026-08-21 14:56:27,2026-08-23,Eredivisie,PSV Eindhoven,Groningen,Under 2.5,3.4,🎯 Auto (XGBoost ML Only),36.8,28.3,8.5,13.1,,PENDING,0.0,208.76,,
 2026-08-21 14:57:06,2026-08-23,Pro League,Club Brugge,Cercle Brugge,Under 2.5,3.5,🎯 Auto (Dual Ensemble),42.6,27.1,15.6,24.61,,PENDING,0.0,208.76,,
-2026-08-21 14:57:54,2026-08-23,Segunda Division,Sp Gijon,Burgos,Over 2.5,2.4,🎯 Auto (Dual Ensemble),48.5,39.5,8.9,14.59,,PENDING,0.0,0.0,,
+2026-08-21 14:57:54,2026-08-23,Segunda Division,Sp Gijon,Burgos,Over 2.5,2.4,🎯 Auto (Dual Ensemble),48.5,39.5,8.9,14.59,,PENDING,0.0,208.76,,
+2026-08-21 14:58:31,2026-08-23,Super Lig,Goztep,Genclerbirligi,Under 2.5,1.91,🎯 Auto (Dual Ensemble),59.4,50.0,9.4,18.46,,PENDING,0.0,0.0,,
