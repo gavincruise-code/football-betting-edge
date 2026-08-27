@@ -210,4 +210,5 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-08-23 19:01:04,2026-08-24,Argentina,Tigre,Central Córdoba (Santiago del Estero),Under 2.5,1.52,🎯 Auto (Dixon-Coles Only),73.1,62.7,10.3,50.0,,PENDING,0.0,230.15,,
 2026-08-23 19:35:43,2026-08-27,La_Liga,Celta Vigo,Osasuna,Over 2.5,2.16,🎯 Auto (Dual Ensemble),60.6,47.6,13.0,25.0,,PENDING,0.0,230.15,,
 2026-08-24 22:49:43,2026-08-25,Colombia B,Internacional Palmira,Barranquilla,Under 2.5,2.36,🎯 Auto (Dual Ensemble),57.6,43.6,14.0,25.0,,PENDING,0.0,230.15,,
-2026-08-24 22:53:45,2026-08-25,Saudi Pro League,Abha,Al Khaleej Saihat,Over 2.5,1.86,🎯 Auto (Dual Ensemble),61.4,55.0,6.4,20.75,,PENDING,0.0,0.0,,
+2026-08-24 22:53:45,2026-08-25,Saudi Pro League,Abha,Al Khaleej Saihat,Over 2.5,1.86,🎯 Auto (Dual Ensemble),61.4,55.0,6.4,20.75,,PENDING,0.0,230.15,,
+2026-08-27 18:34:17,2026-08-27,La_Liga,Celta,Osasuna,Over 2.5,2.4,🎯 Auto (Dual Ensemble),60.6,42.9,17.7,25.0,,PENDING,0.0,0.0,,
