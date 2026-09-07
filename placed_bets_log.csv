@@ -243,4 +243,5 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-09-07 12:00:03,2026-09-10,USA (MLS),Austin FC,Colorado Rapids,Over 2.5,1.9,🎯 Auto (Dual Ensemble),62.0,53.9,8.1,43.87,,PENDING,0.0,160.17,,
 2026-09-07 12:02:07,2026-09-12,La_Liga,Real Madrid,Rayo Vallecano,Under 2.5,3.8,🎯 Auto (Dual Ensemble),43.8,27.3,16.5,25.0,,PENDING,0.0,160.17,,
 2026-09-07 12:03:22,2026-09-13,Serie_A,Lecce,Monza,Over 2.5,20.0,🎯 Auto (Dual Ensemble),46.9,5.2,41.7,25.0,,PENDING,0.0,160.17,,
-2026-09-07 12:06:59,2026-09-13,Super Lig,Genclerbirligi,Kasimpasa,Over 2.5,2.16,🎯 Auto (Dual Ensemble),56.0,47.6,8.5,20.2,,PENDING,0.0,0.0,,
+2026-09-07 12:06:59,2026-09-13,Super Lig,Genclerbirligi,Kasimpasa,Over 2.5,2.16,🎯 Auto (Dual Ensemble),56.0,47.6,8.5,20.2,,PENDING,0.0,160.17,,
+2026-09-07 15:53:57,2026-09-07,Sweden,Mjällby AIF,IFK Göteborg,Under 2.5,2.16,🎯 Auto (Dual Ensemble),60.3,47.6,12.7,30.0,,PENDING,0.0,0.0,,
