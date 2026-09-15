@@ -263,3 +263,6 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-09-15 16:09:12,2026-09-19,Championship,Wrexham,Southampton,Over 2.5,1.8,🎯 Auto (Dual Ensemble),67.6,56.8,10.8,50.0,,,PENDING,0.0,0.0,
 2026-09-15 16:09:12,2026-09-19,Super Lig,Trabzonspor,Galatasaray,Under 2.5,2.76,🎯 Auto (Dual Ensemble),46.2,37.4,8.8,35.08,,,PENDING,0.0,0.0,
 2026-09-15 16:09:12,2026-09-19,La_Liga,Sevilla,Barcelona,Under 2.5,3.5,🎯 Auto (Dual Ensemble),43.4,29.6,13.8,24.49,,,PENDING,0.0,0.0,
+2026-09-15 16:09:12,2026-09-20,Serie_A,Frosinone,Como,Under 2.5,2.82,🎯 Auto (Dual Ensemble),48.1,36.6,11.5,22.61,,,PENDING,0.0,0.0,
+2026-09-15 16:09:12,2026-09-20,Ligue_1,Nice,Lille,Over 2.5,1.96,🎯 Auto (Dual Ensemble),63.9,52.3,11.6,25.0,,,PENDING,0.0,0.0,
+2026-09-15 16:09:12,2026-09-20,Serie_A,AC Milan,Lecce,Under 2.5,2.3,🎯 Auto (Dual Ensemble),54.4,44.7,9.6,21.77,,,PENDING,0.0,0.0,
