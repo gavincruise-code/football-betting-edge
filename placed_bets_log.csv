@@ -311,3 +311,4 @@ Timestamp_Recorded,Match_Date,League,Home_Team,Away_Team,Market,Odds,Strategy,Mo
 2026-10-10 11:11:13,2026-10-10,League 2,Crawley Town,Chesterfield,Under 2.5,2.8,🎯 Auto (Dual Ensemble),55.1,35.3,19.8,1.41,,,PENDING,0.0,0.0,LIVE bot 446321447819
 2026-10-10 11:11:17,2026-10-10,Hungary,Ferencvarosi TC,Debreceni VSC,Under 2.5,3.3,🎯 Auto (Dual Ensemble),47.6,29.9,17.7,5.0,,,PENDING,0.0,0.0,LIVE bot 446321458444
 2026-10-11 09:03:17,2026-10-11,Bundesliga 2,Hertha,Greuther Furth,Under 2.5,3.55,🎯 Auto (XGBoost ML Only),42.0,27.8,14.1,4.5,,,PENDING,0.0,0.0,LIVE bot 446524831674
+2026-10-11 09:03:20,2026-10-11,Norway,Fredrikstad,Tromso,Over 2.5,1.93,🎯 Auto (Dual Ensemble),65.2,51.1,14.1,5.0,,,PENDING,0.0,0.0,LIVE bot 446524837380
