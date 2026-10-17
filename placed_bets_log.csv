@@ -417,3 +417,4 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-10-17 13:00:49,2026-10-17T12:30:00.000Z,2026-10-17,Hungary,Nyiregyhaza,Budapest Honved,Under 2.5,2.34,resting,48.7,42.9,5.8,1.62,,,PENDING,0.0,0.0,LIVE bot resting 447400956594
 2026-10-17 13:00:51,2026-10-17T14:00:00.000Z,2026-10-17,Scottish League 2,Dumbarton,Stirling,Under 2.5,2.7,resting,50.3,37.4,13.0,1.05,,,PENDING,0.0,0.0,LIVE bot resting 447414414663
 2026-10-17 13:00:53,2026-10-17T16:00:00.000Z,2026-10-17,Super Lig,Fenerbahce,Alanyaspor,Under 2.5,2.82,resting,45.1,35.5,9.6,1.98,,,PENDING,0.0,0.0,LIVE bot resting 447414432676
+2026-10-17 15:48:29,,2026-10-17,SA_Scotland,Dunfermline,Livingston,Over 2.5,6.2,SA_Halftime_InPlay,22.6,16.1,6.5,1.93,,,PENDING,0.0,0.0,SA HT in-play 447487321954
