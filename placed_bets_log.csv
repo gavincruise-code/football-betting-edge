@@ -442,3 +442,4 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-10-18 05:30:18,2026-10-19T18:00:00.000Z,2026-10-19,Romania,FC Voluntari,FCSB,Under 2.5,2.66,resting,55.8,38.9,16.8,2.5,,,PENDING,0.0,0.0,LIVE bot resting 447567251477
 2026-10-18 06:30:16,2026-10-18T18:00:00.000Z,2026-10-18,Super League,PAOK,Iraklis,Under 2.5,2.44,resting,60.6,41.5,19.1,2.3,,,PENDING,0.0,0.0,LIVE bot resting 447510568006
 2026-10-18 11:00:13,2026-10-19T17:00:00.000Z,2026-10-19,Poland,Wisla Plock,Radomiak Radom,Under 2.5,2.5,resting,50.6,40.8,9.7,1.39,,,PENDING,0.0,0.0,LIVE bot resting 447573507910
+2026-10-18 20:50:28,,2026-10-18,SA_Spain,Burgos,Sabadell,Over 2.5,13.0,SA_Halftime_InPlay,13.0,7.7,5.3,1.44,,,PENDING,0.0,0.0,SA HT in-play 447749145335
