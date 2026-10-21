@@ -468,3 +468,5 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-10-20 17:00:25,2026-10-20T18:45:00.000Z,2026-10-20,League 2,York,Accrington,Under 2.5,2.58,resting,47.8,39.3,8.5,1.19,,,PENDING,0.0,0.0,LIVE bot resting 447944841329
 2026-10-20 19:30:25,2026-10-20T18:45:00.000Z,2026-10-20,League 1,Bromley,Leicester,Under 2.5,2.7,resting,47.8,37.4,10.4,1.25,,,PENDING,0.0,0.0,LIVE bot resting 447960826322
 2026-10-21 02:52:23,,2026-10-21,SA_Mexico,Atletico San Luis,Club Queretaro,Over 1.5,2.26,SA_Halftime_InPlay,49.5,44.2,5.3,2.36,,,PENDING,0.0,0.0,SA HT in-play 448001361842
+2026-10-21 02:52:30,,2026-10-21,SA_Mexico,FC Juarez,Atlante FC,Over 1.5,2.34,SA_Halftime_InPlay,49.5,42.7,6.8,2.95,,,PENDING,0.0,0.0,SA HT in-play 448001363069
+2026-10-21 05:52:27,,2026-10-21,SA_Japan,Tochigi SC,Biwako Shiga,Over 1.5,2.76,SA_Halftime_InPlay,44.5,36.2,8.3,3.24,,,PENDING,0.0,0.0,SA HT in-play 448011645258
