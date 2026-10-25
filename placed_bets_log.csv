@@ -530,3 +530,4 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-10-25 15:00:18,2026-10-25T16:30:00.000Z,2026-10-25,Poland,Legia Warszawa,Lech Poznan,Under 2.5,2.36,resting,54.0,42.8,11.2,4.2,,,PENDING,0.0,0.0,LIVE bot resting 448688007057
 2026-10-25 15:30:26,2026-10-25T16:00:00.000Z,2026-10-25,Norway,Kristiansund BK,KFUM Oslo,Over 2.5,1.87,resting,61.2,53.8,7.5,1.92,,,PENDING,0.0,0.0,LIVE bot resting 448727222159
 2026-10-25 16:30:22,2026-10-25T18:15:00.000Z,2026-10-25,Pro League,St. Gilloise,Cercle Brugge,Under 2.5,2.74,resting,50.2,36.9,13.3,4.67,,,PENDING,0.0,0.0,LIVE bot resting 448722799510
+2026-10-25 16:46:29,,2026-10-25,SA_Morocco,CR Khemis Zemamra,FUS Rabat,Over 2.5,8.8,SA_Halftime_InPlay,14.6,11.4,3.2,1.0,,,PENDING,0.0,0.0,SA HT in-play 448750331185
