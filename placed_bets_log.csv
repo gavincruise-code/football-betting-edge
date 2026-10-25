@@ -539,3 +539,4 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-10-25 19:14:35,,2026-10-25,SA_Peru,UCV Moquegua,Alianza Lima,Over 1.5,2.62,SA_Halftime_InPlay,44.6,38.2,6.4,2.6,,,PENDING,0.0,0.0,SA HT in-play 448776552387
 2026-10-25 19:14:36,,2026-10-25,SA_Peru,UCV Moquegua,Alianza Lima,Over 2.5,7.4,SA_Halftime_InPlay,17.4,13.5,3.9,1.12,,,PENDING,0.0,0.0,SA HT in-play 448776589488
 2026-10-25 21:00:11,2026-10-26T18:30:00.000Z,2026-10-26,Super Lig,Galatasaray,Fenerbahce,Under 2.5,2.9,resting,45.4,35.2,10.2,0.84,,,PENDING,0.0,0.0,LIVE bot resting 448683068661
+2026-10-25 22:00:12,2026-10-26T01:00:00.000Z,2026-10-26,MLS,Los Angeles FC,Los Angeles Galaxy,Under 2.5,3.1,resting,38.8,33.0,5.8,1.56,,,PENDING,0.0,0.0,LIVE bot resting 448774513056
