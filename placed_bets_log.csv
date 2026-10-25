@@ -514,3 +514,5 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-10-24 18:30:11,2026-10-24T18:15:00.000Z,2026-10-24,Poland,Wisla Krakow,Raków Częstochowa,Under 2.5,2.64,resting,47.6,38.3,9.3,3.17,,,PENDING,0.0,0.0,LIVE bot resting 448510525232
 2026-10-24 20:00:09,2026-10-24T23:00:00.000Z,2026-10-24,Primera Division Chile,O'Higgins,Cobresal,Under 2.5,2.6,resting,49.0,39.2,9.8,3.19,,,PENDING,0.0,0.0,LIVE bot resting 448368645497
 2026-10-24 21:50:30,,2026-10-24,SA_Morocco,Moghreb Tetouan,Widad Témara,Over 1.5,3.55,SA_Halftime_InPlay,34.8,28.2,6.6,2.31,,,PENDING,0.0,0.0,SA HT in-play 448595183730
+2026-10-24 21:50:37,,2026-10-24,SA_Morocco,Moghreb Tetouan,Widad Témara,Over 2.5,11.0,SA_Halftime_InPlay,14.6,9.1,5.5,1.52,,,PENDING,0.0,0.0,SA HT in-play 448595203574
+2026-10-25 02:00:08,2026-10-25T16:00:00.000Z,2026-10-25,Super League,Volos NFC,Panathinaikos,Under 2.5,2.54,resting,57.6,41.5,16.0,3.33,,,PENDING,0.0,0.0,LIVE bot resting 448529379906
