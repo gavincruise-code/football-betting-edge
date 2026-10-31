@@ -564,3 +564,4 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-10-31 12:30:13,2026-10-31T15:00:00.000Z,2026-10-31,Conference,Solihull,Kidderminster,Under 2.5,2.02,resting,51.1,50.1,1.0,1.52,,,PENDING,0.0,0.0,LIVE bot resting 449562428670
 2026-10-31 13:52:30,,2026-10-31,SA_Spain,Real Sociedad II,Girona,Over 1.5,2.22,SA_Halftime_InPlay,50.9,45.0,5.8,7.98,,,PENDING,0.0,0.0,SA HT in-play 449592637913
 2026-10-31 15:00:13,2026-11-01T16:00:00.000Z,2026-11-01,Serbia,FK Partizan,Zemun,Over 2.5,1.45,resting,69.9,68.9,1.1,2.52,,,PENDING,0.0,0.0,LIVE bot resting 449603450837
+2026-10-31 18:56:33,,2026-10-31,SA_Argentina,Tristan Suarez,Deportivo Maipu,Over 1.5,3.8,SA_Halftime_InPlay,30.8,26.3,4.5,4.55,,,PENDING,0.0,0.0,SA HT in-play 449676894795
