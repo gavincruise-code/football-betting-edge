@@ -571,3 +571,4 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-11-01 13:00:14,2026-11-01T19:00:00.000Z,2026-11-01,Colombia B,Real Cundinamarca,Tigres FC,Under 2.5,1.56,resting,65.3,64.3,1.0,3.54,,,PENDING,0.0,0.0,LIVE bot resting 449771635622
 2026-11-02 06:30:06,2026-11-02T12:00:00.000Z,2026-11-02,Thai League 1,Chonburi FC,BG Pathum United,Under 2.5,2.04,resting,52.6,51.5,1.0,1.61,,,PENDING,0.0,0.0,LIVE bot resting 449653495824
 2026-11-02 06:30:09,2026-11-03T19:45:00.000Z,2026-11-03,League 2,Northampton Town,Oldham Athletic,Under 2.5,1.82,resting,56.8,55.6,1.2,3.33,,,PENDING,0.0,0.0,LIVE bot resting 449916168634
+2026-11-02 20:52:32,,2026-11-02,SA_Spain,Deportivo La Coruna,Osasuna,Over 2.5,2.32,SA_Halftime_InPlay,48.9,43.1,5.8,3.0,,,PENDING,0.0,0.0,SA HT in-play 450010286294
