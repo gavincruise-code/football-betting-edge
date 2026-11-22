@@ -637,3 +637,4 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-11-21 20:48:30,,2026-11-21,SA_Argentina,Argentinos JRS,Independiente,Over 2.5,2.7,SA_Halftime_InPlay,46.3,37.0,9.3,3.0,,,PENDING,0.0,0.0,SA HT in-play 452464322959
 2026-11-21 23:54:23,,2026-11-21,SA_Mexico,Santos Laguna,Leon,Over 2.5,2.12,SA_Halftime_InPlay,55.2,47.2,8.1,3.0,,,PENDING,0.0,0.0,SA HT in-play 452481884784
 2026-11-22 08:30:09,2026-11-22T19:00:00.000Z,2026-11-22,Brazil Serie B,Criciuma,Fortaleza EC,Under 2.5,1.59,resting,64.3,62.8,1.5,6.16,,,PENDING,0.0,0.0,LIVE bot resting 452484081232
+2026-11-22 11:00:10,2026-11-22T14:00:00.000Z,2026-11-22,Liga Portugal 2,Vizela,Feirense,Under 2.5,1.77,resting,57.8,56.3,1.5,4.61,,,PENDING,0.0,0.0,LIVE bot resting 452499221674
