@@ -634,3 +634,6 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-11-21 16:00:14,2026-11-21T17:00:00.000Z,2026-11-21,Croatia,Rudes,NK Varazdin,Under 2.5,1.92,resting,53.8,52.0,1.8,4.88,,,PENDING,0.0,0.0,LIVE bot resting 452352801818
 2026-11-21 17:24:27,,2026-11-21,SA_Poland,Zaglebie Lubin,Gornik Zabrze,Over 2.5,2.36,SA_Halftime_InPlay,49.4,42.4,7.1,3.0,,,PENDING,0.0,0.0,SA HT in-play 452429031632
 2026-11-21 18:00:15,2026-11-21T18:30:00.000Z,2026-11-21,Romania,Dinamo Bucuresti,Petrolul Ploiesti,Over 2.5,1.68,resting,60.9,59.4,1.5,1.46,,,PENDING,0.0,0.0,LIVE bot resting 452382689227
+2026-11-21 20:48:30,,2026-11-21,SA_Argentina,Argentinos JRS,Independiente,Over 2.5,2.7,SA_Halftime_InPlay,46.3,37.0,9.3,3.0,,,PENDING,0.0,0.0,SA HT in-play 452464322959
+2026-11-21 23:54:23,,2026-11-21,SA_Mexico,Santos Laguna,Leon,Over 2.5,2.12,SA_Halftime_InPlay,55.2,47.2,8.1,3.0,,,PENDING,0.0,0.0,SA HT in-play 452481884784
+2026-11-22 08:30:09,2026-11-22T19:00:00.000Z,2026-11-22,Brazil Serie B,Criciuma,Fortaleza EC,Under 2.5,1.59,resting,64.3,62.8,1.5,6.16,,,PENDING,0.0,0.0,LIVE bot resting 452484081232
