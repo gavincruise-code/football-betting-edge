@@ -650,3 +650,4 @@ Timestamp_Recorded,Market_Open_Time,Match_Date,League,Home_Team,Away_Team,Market
 2026-11-27 11:00:18,2026-11-27T11:00:00.000Z,2026-11-27,Ukraine,Livyi Bereh,Kolos Kovalivka,Under 2.5,1.69,resting,61.3,58.9,2.4,6.37,,,PENDING,0.0,0.0,LIVE bot resting 453095744107
 2026-11-27 11:00:32,2026-11-27T17:00:00.000Z,2026-11-27,Poland,Lech Poznan,Pogon Szczecin,Over 2.5,1.95,resting,52.7,51.1,1.5,3.94,,,PENDING,0.0,0.0,LIVE bot resting 453097328291
 2026-11-27 16:30:12,2026-11-27T18:30:00.000Z,2026-11-27,Romania,Petrolul Ploiesti,Arges Pitesti,Under 2.5,1.88,resting,54.7,53.0,1.7,5.16,,,PENDING,0.0,0.0,LIVE bot resting 453095747692
+2026-11-27 17:50:30,,2026-11-27,SA_Turkey,Sarıyer,İstanbulspor,Over 2.5,2.42,SA_Halftime_InPlay,52.8,41.3,11.5,3.0,,,PENDING,0.0,0.0,SA HT in-play 453146756203
